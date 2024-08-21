@@ -1,0 +1,15 @@
+{
+  "name": "com.futuremapper.ascent.runtime",
+  "version": "1.0.0",
+  "displayName": "Ascent Runtime",
+  "description": "Runtime Library for using compiling and executing Ascent code.",
+  "unity": "2019.3",
+ "keywords": [
+    "ascent",
+    "asc",
+    "script"
+  ],
+  "author": {
+    "name": "FutureMapper"
+  }
+}
