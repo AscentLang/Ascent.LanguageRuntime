@@ -19,7 +19,9 @@ namespace AscentLanguage
         }
 
         public Dictionary<string, ImportVar> ImportVariables { get; set; }
+#if UNITY
         public Dictionary<string, ImportVarUnity> ImportVariablesUnity { get; set; }
+#endif
         public Dictionary<string, Var> QueryVariables { get; set; }
     }
 }

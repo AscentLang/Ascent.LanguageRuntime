@@ -10,7 +10,7 @@ namespace AscentLanguage.Util
     {
         public static bool SearchForPotential(char c, IEnumerable<string> strings)
         {
-            return strings.Any(x => x.StartsWith(c));
+            return strings.Any(x => x.StartsWith(c.ToString()));
         }
 
         public static float ConvertToFloat(string value)
@@ -98,12 +98,12 @@ namespace AscentLanguage.Util
             if (expr is ConstantExpression numberExpr)
             {
                 ;
-                Console.WriteLine($"{GetIndent(indentLevel)}Constant: {new string(numberExpr.Token.tokenBuffer)}");
+                Console.WriteLine($"{GetIndent(indentLevel)}Constant: {numberExpr.Token.tokenBuffer}");
             }
             else if (expr is BinaryExpression binaryExpr)
             {
                 Console.WriteLine($"{GetIndent(indentLevel)}Binary Expression:");
-                Console.WriteLine($"{GetIndent(indentLevel + 2)}Operator: {new string(binaryExpr.Operator.tokenBuffer)}");
+                Console.WriteLine($"{GetIndent(indentLevel + 2)}Operator: {binaryExpr.Operator.tokenBuffer}");
                 PrintExpression(binaryExpr.Left, indentLevel + 2);
                 PrintExpression(binaryExpr.Right, indentLevel + 2);
             }
@@ -119,7 +119,7 @@ namespace AscentLanguage.Util
             else if (expr is FunctionExpression functionExpr)
             {
                 Console.WriteLine($"{GetIndent(indentLevel)}Function:");
-                Console.WriteLine($"{GetIndent(indentLevel + 4)}Type: {new string(functionExpr.FunctionToken.tokenBuffer)}");
+                Console.WriteLine($"{GetIndent(indentLevel + 4)}Type: {functionExpr.FunctionToken.tokenBuffer}");
                 Console.WriteLine($"{GetIndent(indentLevel + 2)}Argument Expression:");
                 for (int i = 0; i < functionExpr.Arguments.Length; i++)
                 {
@@ -129,7 +129,7 @@ namespace AscentLanguage.Util
             else if (expr is FunctionDefinitionExpression functionDefExpr)
             {
                 Console.WriteLine($"{GetIndent(indentLevel)}Function Definition:");
-                Console.WriteLine($"{GetIndent(indentLevel + 4)}Name: {new string(functionDefExpr.FunctionToken.tokenBuffer)}");
+                Console.WriteLine($"{GetIndent(indentLevel + 4)}Name: {functionDefExpr.FunctionToken.tokenBuffer}");
                 Console.WriteLine($"{GetIndent(indentLevel + 2)}Expressions:");
                 for (int i = 0; i < functionDefExpr.Contents.Length; i++)
                 {
@@ -139,24 +139,24 @@ namespace AscentLanguage.Util
             else if (expr is AssignmentExpression assignmentExpr)
             {
                 Console.WriteLine($"{GetIndent(indentLevel)}Assignment:");
-                Console.WriteLine($"{GetIndent(indentLevel + 4)}Variable: {new string(assignmentExpr.VariableToken.tokenBuffer)}");
+                Console.WriteLine($"{GetIndent(indentLevel + 4)}Variable: {assignmentExpr.VariableToken.tokenBuffer}");
                 Console.WriteLine($"{GetIndent(indentLevel + 2)}Setting Expression:");
                 PrintExpression(assignmentExpr.Assignment, indentLevel + 4);
             }
             else if (expr is VariableExpression variableExpr)
             {
                 Console.WriteLine($"{GetIndent(indentLevel)}GrabVariable:");
-                Console.WriteLine($"{GetIndent(indentLevel + 4)}Variable: {new string(variableExpr.VariableToken.tokenBuffer)}");
+                Console.WriteLine($"{GetIndent(indentLevel + 4)}Variable: {variableExpr.VariableToken.tokenBuffer}");
             }
             else if (expr is IncrementVariableExpression variableIncrementExpr)
             {
                 Console.WriteLine($"{GetIndent(indentLevel)}GrabVariable(Incremement):");
-                Console.WriteLine($"{GetIndent(indentLevel + 4)}Variable: {new string(variableIncrementExpr.VariableToken.tokenBuffer)}");
+                Console.WriteLine($"{GetIndent(indentLevel + 4)}Variable: {variableIncrementExpr.VariableToken.tokenBuffer}");
             }
             else if (expr is DecrementVariableExpression variableDecrementExpr)
             {
                 Console.WriteLine($"{GetIndent(indentLevel)}GrabVariable(Decrement):");
-                Console.WriteLine($"{GetIndent(indentLevel + 4)}Variable: {new string(variableDecrementExpr.VariableToken.tokenBuffer)}");
+                Console.WriteLine($"{GetIndent(indentLevel + 4)}Variable: {variableDecrementExpr.VariableToken.tokenBuffer}");
             }
             else if (expr is ReturnExpression returnExpr)
             {

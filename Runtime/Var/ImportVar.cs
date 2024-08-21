@@ -1,5 +1,7 @@
 using System;
+#if UNITY
 using UnityEngine;
+#endif
 
 [Serializable]
 public class ImportVar
@@ -23,6 +25,7 @@ public class ImportVar
                 return value;
             case ImportType.Bool:
                 return bool.Parse(value);
+#if UNITY
             case ImportType.Vector2:
                 string trimmed2 = value.Substring(1, value.Length - 2);
                 string[] split2 = trimmed2.Split(',');
@@ -35,6 +38,7 @@ public class ImportVar
                 string trimmedCol = value.Substring(5, value.Length - 6);
                 string[] splitCol = trimmedCol.Split(',');
                 return new Color(float.Parse(splitCol[0]), float.Parse(splitCol[1]), float.Parse(splitCol[2]), float.Parse(splitCol[3]));
+#endif
             default:
                 return null;
         }

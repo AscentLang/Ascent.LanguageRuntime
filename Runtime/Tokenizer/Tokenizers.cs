@@ -268,7 +268,7 @@ namespace AscentLanguage.Tokenizer
 
         public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
         {
-            if (!AscentFunctions.SearchAnyFunctions((char)peekChar) && !Utility.SearchForPotential((char)peekChar, functionDefs.Select(x => x.name))) return false;
+            //if (!AscentFunctions.SearchAnyFunctions((char)peekChar) && !Utility.SearchForPotential((char)peekChar, functionDefs.Select(x => x.name))) return false;
             StringBuilder stringBuilder = new StringBuilder();
             while (AscentFunctions.GetFunction(stringBuilder.ToString()) == null && br.PeekChar() != '(')
             {

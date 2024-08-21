@@ -31,6 +31,6 @@ namespace AscentLanguage.Splitter
         {
             this.parentContainer = parentContainer;
         }
-        public List<TokenContainer> tokenContainers { get; set; } = new();
+        public List<TokenContainer> tokenContainers { get; set; } = new List<TokenContainer>();
     }
 }

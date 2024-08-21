@@ -1,6 +1,5 @@
+#if UNITY
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
@@ -14,3 +13,4 @@ public class ImportVarUnity
         this.value = value;
     }
 }
+#endif

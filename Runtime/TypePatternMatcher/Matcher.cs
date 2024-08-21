@@ -4,28 +4,29 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
-using Unity.VisualScripting;
-using UnityEngine;
 
 public static class Matcher
 {
     public static ReadOnlyCollection<string> ReadOnlyMatchedQualifiedTypes
     {
-        get { return matchedQualifiedTypes.AsReadOnly(); }
+        get 
+        {
+            if (_matchedQualifiedTypes == null)
+            {
+                _matchedQualifiedTypes = new List<string>();
+				ResetAndMatch();
+			}
+			return _matchedQualifiedTypes.AsReadOnly(); 
+        }
     }
 
-    private static List<string> matchedQualifiedTypes = new List<string>();
-
-#if UNITY_EDITOR
-    [UnityEditor.InitializeOnLoadMethod]
-#else
-	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-#endif
+    private static List<string> _matchedQualifiedTypes = null;
+    
     public static void ResetAndMatch()
     {
         var matcherProvider = AscentDomain.matcherProvider;
 
-        matchedQualifiedTypes.Clear();
+        _matchedQualifiedTypes.Clear();
 
         Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(assembly =>
         {
@@ -64,9 +65,9 @@ public static class Matcher
 
             foreach (Type type in matchTypes)
             {
-                if (!matchedQualifiedTypes.Contains(type.FullName))
+                if (!_matchedQualifiedTypes.Contains(type.FullName))
                 {
-                    matchedQualifiedTypes.Add(type.AssemblyQualifiedName);
+                    _matchedQualifiedTypes.Add(type.AssemblyQualifiedName);
                 }
             }
         }
@@ -76,9 +77,9 @@ public static class Matcher
     {
         List<string> types = new List<string>();
 
-        for (int i = 0; i < matchedQualifiedTypes.Count; i++)
+        for (int i = 0; i < _matchedQualifiedTypes.Count; i++)
         {
-            var type = Type.GetType(matchedQualifiedTypes[i]);
+            var type = Type.GetType(_matchedQualifiedTypes[i]);
             if (type.Namespace.StartsWith(ns))
             {
                 types.Add(type.AssemblyQualifiedName);
@@ -124,7 +125,7 @@ public static class Matcher
             else
             {
                 //Check if each matched type to see if the predicate has been matched as a type.
-                if (GetType(matchedQualifiedTypes.ToArray(), predicate, out Type sysType))
+                if (GetType(_matchedQualifiedTypes.ToArray(), predicate, out Type sysType))
                 {
                     types.Add(sysType.AssemblyQualifiedName);
                 }

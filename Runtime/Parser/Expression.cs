@@ -8,8 +8,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
-using Unity.VisualScripting;
+#if UNITY
 using UnityEngine;
+#endif
 
 namespace AscentLanguage.Parser
 {
@@ -167,7 +168,7 @@ namespace AscentLanguage.Parser
                 }
             }
 
-            throw new InvalidOperationException($"Unsupported operator: {new string(Operator.tokenBuffer)}");
+            throw new InvalidOperationException($"Unsupported operator: {Operator.tokenBuffer}");
         }
     }
 
@@ -656,10 +657,12 @@ namespace AscentLanguage.Parser
                 VarType inputType = (VarType)importVar.type;
                 ascentScriptData.Variables[name] = new Var(inputType, importVar.Get());
             }
+#if UNITY
             else if (ascentVariableMap.ImportVariablesUnity.TryGetValue(name, out var importVarUnity))
             {
                 ascentScriptData.Variables[name] = new Var(VarType.Object, importVarUnity.value);
             }
+#endif
             else
             {
                 ascentScriptData.Variables[name] = new Var(VarType.Object, null);

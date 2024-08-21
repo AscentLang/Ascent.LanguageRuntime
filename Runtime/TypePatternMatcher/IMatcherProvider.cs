@@ -1,8 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Reflection;
-using UnityEngine;
 
 
 /*
@@ -19,11 +16,11 @@ Order:
 */
 public interface IMatcherProvider
 {
-    public string[] GetWhiteListedAssemblies();
-    public bool DefaultBlacklistAllTypes(Assembly assembly);
-    public string[] GetWhitelistedTypes(Assembly assembly);
-    public string[] GetBlacklistedTypes(Assembly assembly);
-    public bool DefaultBlacklistAllMethods(Type type);
-    public string[] GetWhitelistedMethods(Type type);
-    public string[] GetBlacklistedMethods(Type type);
+	public string[] GetWhiteListedAssemblies();
+	public bool DefaultBlacklistAllTypes(Assembly assembly);
+	public string[] GetWhitelistedTypes(Assembly assembly);
+	public string[] GetBlacklistedTypes(Assembly assembly);
+	public bool DefaultBlacklistAllMethods(Type type);
+	public string[] GetWhitelistedMethods(Type type);
+	public string[] GetBlacklistedMethods(Type type);
 }

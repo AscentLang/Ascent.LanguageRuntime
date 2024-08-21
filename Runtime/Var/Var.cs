@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEngine;
 
 namespace AscentLanguage
 {
@@ -16,9 +15,8 @@ namespace AscentLanguage
 
         public VarType Type => _serializedType;
         public object Value => _value;
-        private object _value;
 
-        [SerializeField]
+        private object _value;
         private VarType _serializedType;
 
         public T GetValue<T>()
@@ -62,9 +60,11 @@ namespace AscentLanguage
             if (type == typeof(float) || type == typeof(double)) return VarType.Float;
             if (type == typeof(string)) return VarType.String;
             if (type == typeof(bool)) return VarType.Bool;
+#if UNITY
             if (type == typeof(Vector2)) return VarType.Vector2;
             if (type == typeof(Vector3)) return VarType.Vector3;
             if (type == typeof(Color)) return VarType.Color;
+#endif
             return VarType.Object;
         }
 
