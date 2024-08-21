@@ -25,5 +25,6 @@ namespace AscentLanguage
 
         public Dictionary<string, Var> Variables { get; set; }
         public List<string> Predicates { get; set; }
-    }
+		public Dictionary<string, FunctionDefinition> Functions { get; set; } = new Dictionary<string, FunctionDefinition>();
+	}
 }

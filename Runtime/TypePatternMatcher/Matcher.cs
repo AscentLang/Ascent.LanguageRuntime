@@ -38,13 +38,13 @@ public static class Matcher
 
             if (!matcherProvider.DefaultBlacklistAllTypes(assembly))
             {
-                matchTypes.AddRange(assembly.GetTypesSafely());
+				assembly.GetTypes().All(type => matchTypes.Add(type));
             }
 
             string[] whiteListedTypes = matcherProvider.GetWhitelistedTypes(assembly);
             string[] blackListedTypes = matcherProvider.GetBlacklistedTypes(assembly);
 
-            foreach (Type type in assembly.GetTypesSafely())
+            foreach (Type type in assembly.GetTypes())
             {
                 if (whiteListedTypes.Contains(type.Name) || whiteListedTypes.Contains(type.FullName))
                 {

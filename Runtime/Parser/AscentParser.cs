@@ -57,7 +57,7 @@ namespace AscentLanguage.Parser
             }
         }
 
-        public List<Expression> Parse(AscentVariableMap variableMap)
+        public List<Expression> Parse(AscentVariableMap variableMap, AscentScriptData scriptData)
         {
             var expressions = new List<Expression>();
 
@@ -66,7 +66,7 @@ namespace AscentLanguage.Parser
                 LoadNextContainer();
                 while (_position < _currentTokens.Length)
                 {
-                    var expression = ParseExpression(variableMap);
+                    var expression = ParseExpression(variableMap, scriptData);
                     if (expression != null)
                     {
                         expressions.Add(expression);
@@ -79,14 +79,14 @@ namespace AscentLanguage.Parser
             return expressions;
         }
 
-        public Expression ParseExpression(AscentVariableMap variableMap)
+        public Expression ParseExpression(AscentVariableMap variableMap, AscentScriptData scriptData)
         {
-            return ParseBinary(0, variableMap);
+            return ParseBinary(0, variableMap, scriptData);
         }
 
-        private Expression ParseBinary(int precedence, AscentVariableMap variableMap)
+        private Expression ParseBinary(int precedence, AscentVariableMap variableMap, AscentScriptData scriptData)
         {
-            var left = ParsePrimary(variableMap);
+            var left = ParsePrimary(variableMap, scriptData);
 
             while (true)
             {
@@ -108,7 +108,7 @@ namespace AscentLanguage.Parser
                 if (operatorToken.type == TokenType.TernaryConditional)
                 {
                     var condition = left;
-                    var trueExpression = ParseExpression(variableMap);
+                    var trueExpression = ParseExpression(variableMap, scriptData);
 
                     if (!CurrentTokenIs(TokenType.Colon))
                     {
@@ -116,13 +116,13 @@ namespace AscentLanguage.Parser
                     }
                     _position++; // consume ':'
 
-                    var falseExpression = ParseExpression(variableMap);
+                    var falseExpression = ParseExpression(variableMap, scriptData);
 
                     return new TernaryExpression(condition, trueExpression, falseExpression);
                 }
                 else
                 {
-                    var right = ParseBinary(tokenPrecedence + 1, variableMap);
+                    var right = ParseBinary(tokenPrecedence + 1, variableMap, scriptData);
                     left = new BinaryExpression(left, operatorToken, right);
                 }
             }
@@ -130,7 +130,7 @@ namespace AscentLanguage.Parser
             return left;
         }
 
-        private Expression ParsePrimary(AscentVariableMap variableMap)
+        private Expression ParsePrimary(AscentVariableMap variableMap, AscentScriptData scriptData)
         {
             Expression left = null;
 
@@ -149,7 +149,7 @@ namespace AscentLanguage.Parser
             else if (CurrentTokenIs(TokenType.LeftParenthesis))
             {
                 _position++; // consume '('
-                left = ParseExpression(variableMap);
+                left = ParseExpression(variableMap, scriptData);
                 if (!CurrentTokenIs(TokenType.RightParenthesis))
                 {
                     throw new FormatException("Missing closing parenthesis");
@@ -159,7 +159,7 @@ namespace AscentLanguage.Parser
             else if (CurrentTokenIs(TokenType.LeftBracket))
             {
                 _position++; // consume '['
-                left = ParseExpression(variableMap);
+                left = ParseExpression(variableMap, scriptData);
                 if (!CurrentTokenIs(TokenType.RightBracket))
                 {
                     throw new FormatException("Missing closing bracket");
@@ -176,7 +176,7 @@ namespace AscentLanguage.Parser
                 }
                 _position++; // consume '('
 
-                var arguments = ParseFunctionArguments(false, variableMap);
+                var arguments = ParseFunctionArguments(false, variableMap, scriptData);
 
                 if (!CurrentTokenIs(TokenType.RightParenthesis))
                 {
@@ -196,7 +196,7 @@ namespace AscentLanguage.Parser
                     var arguments = ParseDefinitionArguments();
                     var name = functionToken.tokenBuffer;
                     var definition = new FunctionDefinition(name);
-                    variableMap.Functions.Add(name, definition);
+                    scriptData.Functions.Add(name, definition);
                     definition.args = arguments.ToList();
                     _position++; // consume ')'
                 }
@@ -207,7 +207,7 @@ namespace AscentLanguage.Parser
                 }
                 _position++; // consume '{'
 
-                var contents = ParseFunctionArguments(true, variableMap);
+                var contents = ParseFunctionArguments(true, variableMap, scriptData);
 
                 if (!CurrentTokenIs(TokenType.RightScope))
                 {
@@ -227,17 +227,17 @@ namespace AscentLanguage.Parser
                 if (CurrentTokenIs(TokenType.LeftParenthesis))
                 {
                     _position++; // consume '('
-                    definition = ParseExpression(variableMap);
+                    definition = ParseExpression(variableMap, scriptData);
                     if (CurrentTokenIs(TokenType.SemiColon))
                     {
                         _position++; // consume ';'
                     }
-                    condition = ParseExpression(variableMap);
+                    condition = ParseExpression(variableMap, scriptData);
                     if (CurrentTokenIs(TokenType.SemiColon))
                     {
                         _position++; // consume ';'
                     }
-                    suffix = ParseExpression(variableMap);
+                    suffix = ParseExpression(variableMap, scriptData);
                     _position++; // consume ')'
                 }
                 else
@@ -251,7 +251,7 @@ namespace AscentLanguage.Parser
                 }
                 _position++; // consume '{'
 
-                var contents = ParseFunctionArguments(true, variableMap);
+                var contents = ParseFunctionArguments(true, variableMap, scriptData);
 
                 if (!CurrentTokenIs(TokenType.RightScope))
                 {
@@ -269,7 +269,7 @@ namespace AscentLanguage.Parser
                 if (CurrentTokenIs(TokenType.LeftParenthesis))
                 {
                     _position++; // consume '('
-                    condition = ParseExpression(variableMap);
+                    condition = ParseExpression(variableMap, scriptData);
                     _position++; // consume ')'
                 }
                 else
@@ -283,7 +283,7 @@ namespace AscentLanguage.Parser
                 }
                 _position++; // consume '{'
 
-                var contents = ParseFunctionArguments(true, variableMap);
+                var contents = ParseFunctionArguments(true, variableMap, scriptData);
 
                 if (!CurrentTokenIs(TokenType.RightScope))
                 {
@@ -296,13 +296,13 @@ namespace AscentLanguage.Parser
             else if (CurrentTokenIs(TokenType.Definition) || CurrentTokenIs(TokenType.Assignment))
             {
                 var definitionToken = _currentTokens[_position++];
-                var assignment = ParseExpression(variableMap);
+                var assignment = ParseExpression(variableMap, scriptData);
                 left = new AssignmentExpression(definitionToken, assignment);
             }
             else if (CurrentTokenIs(TokenType.Return))
             {
                 _position++; // consume 'return'
-                var ret = ParseExpression(variableMap);
+                var ret = ParseExpression(variableMap, scriptData);
                 left = new ReturnExpression(ret);
             }
             else if (CurrentTokenIs(TokenType.Namespace))
@@ -331,7 +331,7 @@ namespace AscentLanguage.Parser
             if (CurrentTokenIs(TokenType.Assignment) && left is AccessExpression accessExpression)
             {
                 _position++;
-                var assignment = ParseExpression(variableMap);
+                var assignment = ParseExpression(variableMap, scriptData);
                 left = new AccessAssignmentExpression(accessExpression, assignment);
             }
 
@@ -360,7 +360,7 @@ namespace AscentLanguage.Parser
             return arguments.ToArray();
         }
 
-        private Expression[] ParseFunctionArguments(bool scoped, AscentVariableMap variableMap)
+        private Expression[] ParseFunctionArguments(bool scoped, AscentVariableMap variableMap, AscentScriptData scriptData)
         {
             var arguments = new List<Expression>();
 
@@ -372,7 +372,7 @@ namespace AscentLanguage.Parser
                 LoadNextContainer();
                 if (CurrentTokenIs(scoped ? TokenType.RightScope : TokenType.RightParenthesis)) break;
                 checks++;
-                var argument = ParseExpression(variableMap);
+                var argument = ParseExpression(variableMap, scriptData);
                 arguments.Add(argument);
 
                 if (CurrentTokenIs(TokenType.Comma))

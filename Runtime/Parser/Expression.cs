@@ -236,7 +236,7 @@ namespace AscentLanguage.Parser
         public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
         {
             var name = FunctionToken.tokenBuffer;
-            var definition = ascentVariableMap.Functions.FirstOrDefault(x => x.Key == name);
+            var definition = ascentScriptData.Functions.FirstOrDefault(x => x.Key == name);
             if (definition.Value != null)
             {
                 definition.Value.contents = Contents;
@@ -270,12 +270,11 @@ namespace AscentLanguage.Parser
             {
                 foreach (var expression in Contents)
                 {
-                    var map = ascentVariableMap?.Clone();
-                    var map2 = ascentScriptData?.Clone();
-                    expression.Evaluate(map, map2);
+                    var map = ascentScriptData?.Clone();
+                    expression.Evaluate(ascentVariableMap, map);
                     foreach (var item in ascentScriptData.Variables.Select(x => x.Key))
                     {
-                        ascentScriptData.Variables[item] = map2.Variables[item];
+                        ascentScriptData.Variables[item] = map.Variables[item];
                     }
                 }
                 Suffix.Evaluate(ascentVariableMap, ascentScriptData);
@@ -303,12 +302,11 @@ namespace AscentLanguage.Parser
             {
                 foreach (var expression in Contents)
                 {
-                    var map = ascentVariableMap?.Clone();
-                    var map2 = ascentScriptData?.Clone();
-                    expression.Evaluate(map, map2);
+                    var map = ascentScriptData?.Clone();
+                    expression.Evaluate(ascentVariableMap, map);
                     foreach (var item in ascentScriptData.Variables.Select(x => x.Key))
                     {
-                        ascentScriptData.Variables[item] = map2.Variables[item];
+                        ascentScriptData.Variables[item] = map.Variables[item];
                     }
                 }
             }
@@ -371,7 +369,7 @@ namespace AscentLanguage.Parser
             Var[] args = Arguments.Select(x => x.Evaluate(ascentVariableMap, ascentScriptData)).ToArray();
             if (function == null)
             {
-                if (ascentVariableMap != null && ascentVariableMap.Functions.TryGetValue(name, out var expressions))
+                if (ascentScriptData != null && ascentScriptData.Functions.TryGetValue(name, out var expressions))
                 {
                     for (int i = 0; i < expressions.args.Count; i++)
                     {

@@ -18,16 +18,8 @@ namespace AscentLanguage
         {
         }
 
-        public AscentVariableMap Clone()
-        {
-            var clone = new AscentVariableMap(QueryVariables);
-            clone.Functions = new Dictionary<string, FunctionDefinition>(Functions);
-            return clone;
-        }
-
         public Dictionary<string, ImportVar> ImportVariables { get; set; }
         public Dictionary<string, ImportVarUnity> ImportVariablesUnity { get; set; }
         public Dictionary<string, Var> QueryVariables { get; set; }
-        internal Dictionary<string, FunctionDefinition> Functions { get; set; } = new Dictionary<string, FunctionDefinition>();
     }
 }

@@ -35,12 +35,11 @@ namespace AscentLanguage
 
             ascentScriptData = new AscentScriptData();
 
-            variableMap.Functions.Clear();
             List<Expression> toEvaluate = new List<Expression>();
             if (cachedExpressions.ContainsKey(expression) && cache)
             {
                 toEvaluate = cachedExpressions[expression].expressions.ToList();
-                variableMap.Functions = cachedExpressions[expression].functions;
+				ascentScriptData.Functions = cachedExpressions[expression].functions;
             }
             else
             {
@@ -63,7 +62,7 @@ namespace AscentLanguage
 
                 var parser = new AscentParser(containers as MultipleTokenContainer);
 
-                var parsedExpressions = parser.Parse(variableMap);
+                var parsedExpressions = parser.Parse(variableMap, ascentScriptData);
 
                 if (debug)
                 {
@@ -80,7 +79,7 @@ namespace AscentLanguage
                     toEvaluate.Add(parsedExpressions[i]);
                 }
                 if (cache)
-                    cachedExpressions[expression] = new CacheData(toEvaluate.ToArray(), variableMap.Functions);
+                    cachedExpressions[expression] = new CacheData(toEvaluate.ToArray(), ascentScriptData.Functions);
             }
             Var result = 0f;
             foreach (var evaluate in toEvaluate)
