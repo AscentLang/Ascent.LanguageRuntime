@@ -1,16 +1,18 @@
 #if UNITY_5_3_OR_NEWER
 using System;
-using UnityEngine;
 
-[Serializable]
-public class ImportVarUnity
+namespace AscentLanguage.Var
 {
-    public string name = "";
-    public UnityEngine.Object value;
-
-    public void Set(UnityEngine.Object value)
+    [Serializable]
+    public class ImportVarUnity
     {
-        this.value = value;
+        public string name = "";
+        public UnityEngine.Object value;
+
+        public void Set(UnityEngine.Object settingValue)
+        {
+            value = settingValue;
+        }
     }
 }
 #endif

@@ -43,21 +43,22 @@
         Import,
         Access,
     }
+    
     public struct Token
     {
-        public TokenType type;
-        public string tokenBuffer; // Useful Buffer for token. For operators, it's a single char for the operation. For variables, it's the variable name. For numbers, it's the number. For Function Defs it's the function name. Etc.
+        public readonly TokenType Type;
+        public readonly string TokenBuffer; // Useful Buffer for token. For operators, it's a single char for the operation. For variables, it's the variable name. For numbers, it's the number. For Function Defs it's the function name. Etc.
 
         public Token(TokenType type, string tokenBuffer)
         {
-            this.type = type;
-            this.tokenBuffer = tokenBuffer;
+            Type = type;
+            TokenBuffer = tokenBuffer;
         }
 
         public Token(TokenType type, char token)
         {
-            this.type = type;
-            this.tokenBuffer = "" + token;
+            Type = type;
+            TokenBuffer = "" + token;
         }
     }
 }

@@ -1,21 +1,20 @@
 ﻿using AscentLanguage.Tokenizer;
-using AscentLanguage.Util;
 using AscentLanguage.Splitter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AscentLanguage.Data;
 
 namespace AscentLanguage.Parser
 {
     public class AscentParser
     {
-        private TokenContainer _currentContainer;
         private int _position;
-        private List<TokenContainer> _containerStack;
+        private readonly List<TokenContainer> _containerStack;
         private Token[] _currentTokens;
 
         // Define operator precedence levels
-        private static readonly Dictionary<TokenType, int> Precedence = new Dictionary<TokenType, int>
+        private static readonly Dictionary<TokenType, int> precedence = new()
         {
             { TokenType.Pow, 9 },
             { TokenType.TernaryConditional, 5 },
@@ -31,9 +30,8 @@ namespace AscentLanguage.Parser
 
         public AscentParser(TokenContainer rootContainer)
         {
-            _currentContainer = rootContainer;
             _position = 0;
-            _containerStack = new List<TokenContainer> { _currentContainer };
+            _containerStack = new List<TokenContainer> { rootContainer };
             _currentTokens = Array.Empty<Token>();
             LoadNextContainer();
         }
@@ -45,14 +43,15 @@ namespace AscentLanguage.Parser
                 var currentContainer = _containerStack[0];
                 _containerStack.RemoveAt(0);
 
-                if (currentContainer is SingleTokenContainer single)
+                switch (currentContainer)
                 {
-                    _currentTokens = single.Expression;
-                    _position = 0;
-                }
-                else if (currentContainer is MultipleTokenContainer multiple)
-                {
-                    _containerStack.InsertRange(0, multiple.tokenContainers);
+                    case SingleTokenContainer single:
+                        _currentTokens = single.Expression;
+                        _position = 0;
+                        break;
+                    case MultipleTokenContainer multiple:
+                        _containerStack.InsertRange(0, multiple.TokenContainers);
+                        break;
                 }
             }
         }
@@ -79,35 +78,32 @@ namespace AscentLanguage.Parser
             return expressions;
         }
 
-        public Expression ParseExpression(AscentVariableMap variableMap, AscentScriptData scriptData)
+        private Expression ParseExpression(AscentVariableMap variableMap, AscentScriptData scriptData)
         {
             return ParseBinary(0, variableMap, scriptData);
         }
 
-        private Expression ParseBinary(int precedence, AscentVariableMap variableMap, AscentScriptData scriptData)
+        private Expression ParseBinary(int opPrecedence, AscentVariableMap variableMap, AscentScriptData scriptData)
         {
             var left = ParsePrimary(variableMap, scriptData);
 
             while (true)
             {
-                if (_position >= _currentTokens.Length || !Precedence.ContainsKey(_currentTokens[_position].type))
+                if (_position >= _currentTokens.Length || !precedence.ContainsKey(_currentTokens[_position].Type))
                 {
                     break;
                 }
 
                 var operatorToken = _currentTokens[_position];
-                var tokenPrecedence = Precedence[operatorToken.type];
-                if (tokenPrecedence < precedence)
+                var tokenPrecedence = precedence[operatorToken.Type];
+                if (tokenPrecedence < opPrecedence)
                 {
                     break;
                 }
 
-
-
                 _position++;
-                if (operatorToken.type == TokenType.TernaryConditional)
+                if (operatorToken.Type == TokenType.TernaryConditional)
                 {
-                    var condition = left;
                     var trueExpression = ParseExpression(variableMap, scriptData);
 
                     if (!CurrentTokenIs(TokenType.Colon))
@@ -118,13 +114,11 @@ namespace AscentLanguage.Parser
 
                     var falseExpression = ParseExpression(variableMap, scriptData);
 
-                    return new TernaryExpression(condition, trueExpression, falseExpression);
+                    return new TernaryExpression(left, trueExpression, falseExpression);
                 }
-                else
-                {
-                    var right = ParseBinary(tokenPrecedence + 1, variableMap, scriptData);
-                    left = new BinaryExpression(left, operatorToken, right);
-                }
+
+                var right = ParseBinary(tokenPrecedence + 1, variableMap, scriptData);
+                left = new BinaryExpression(left, operatorToken, right);
             }
 
             return left;
@@ -194,10 +188,10 @@ namespace AscentLanguage.Parser
                 {
                     _position++; // consume '('
                     var arguments = ParseDefinitionArguments();
-                    var name = functionToken.tokenBuffer;
+                    var name = functionToken.TokenBuffer;
                     var definition = new FunctionDefinition(name);
                     scriptData.Functions.Add(name, definition);
-                    definition.args = arguments.ToList();
+                    definition.Args = arguments.ToList();
                     _position++; // consume ')'
                 }
 
@@ -220,9 +214,9 @@ namespace AscentLanguage.Parser
             else if (CurrentTokenIs(TokenType.ForLoop))
             {
                 _position++; // consume 'for'
-                Expression definition = null;
-                Expression condition = null;
-                Expression suffix = null;
+                Expression definition;
+                Expression condition;
+                Expression suffix;
 
                 if (CurrentTokenIs(TokenType.LeftParenthesis))
                 {
@@ -264,7 +258,7 @@ namespace AscentLanguage.Parser
             else if (CurrentTokenIs(TokenType.WhileLoop))
             {
                 _position++; // consume 'while'
-                Expression condition = null;
+                Expression condition;
 
                 if (CurrentTokenIs(TokenType.LeftParenthesis))
                 {
@@ -322,7 +316,7 @@ namespace AscentLanguage.Parser
             }
 
             // Handle access expressions (e.g., a.b)
-            while (CurrentTokenIs(TokenType.Access))
+            while (CurrentTokenIs(TokenType.Access) && left != null)
             {
                 var accessToken = _currentTokens[_position++]; // consume '.'
                 left = new AccessExpression(left, accessToken);
@@ -342,14 +336,14 @@ namespace AscentLanguage.Parser
         {
             var arguments = new List<string>();
 
-            int checks = 0;
+            var checks = 0;
 
             // Parse comma-separated list of arguments
             while (_position < _currentTokens.Length && !CurrentTokenIs(TokenType.RightParenthesis) && checks < 30)
             {
                 checks++;
                 var argument = _currentTokens[_position++];
-                arguments.Add(argument.tokenBuffer);
+                arguments.Add(argument.TokenBuffer);
 
                 if (CurrentTokenIs(TokenType.Comma))
                 {
@@ -364,7 +358,7 @@ namespace AscentLanguage.Parser
         {
             var arguments = new List<Expression>();
 
-            int checks = 0;
+            var checks = 0;
 
             // Parse comma-separated list of arguments
             while (!CurrentTokenIs(scoped ? TokenType.RightScope : TokenType.RightParenthesis) && checks < 30)
@@ -386,12 +380,7 @@ namespace AscentLanguage.Parser
 
         private bool CurrentTokenIs(TokenType type)
         {
-            return _position < _currentTokens.Length && _currentTokens[_position].type == type;
-        }
-
-        private bool NextTokenIs(TokenType type)
-        {
-            return _position + 1 < _currentTokens.Length && _currentTokens[_position + 1].type == type;
+            return _position < _currentTokens.Length && _currentTokens[_position].Type == type;
         }
     }
 }

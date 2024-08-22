@@ -11,18 +11,16 @@ public static class Matcher
     {
         get 
         {
-            if (_matchedQualifiedTypes == null)
-            {
-                _matchedQualifiedTypes = new List<string>();
-				ResetAndMatch();
-			}
-			return _matchedQualifiedTypes.AsReadOnly(); 
+            if (_matchedQualifiedTypes != null) return _matchedQualifiedTypes.AsReadOnly();
+            _matchedQualifiedTypes = new List<string>();
+            ResetAndMatch();
+            return _matchedQualifiedTypes.AsReadOnly(); 
         }
     }
 
     private static List<string> _matchedQualifiedTypes = null;
-    
-    public static void ResetAndMatch()
+
+    private static void ResetAndMatch()
     {
         var matcherProvider = AscentDomain.matcherProvider;
 
@@ -75,11 +73,12 @@ public static class Matcher
 
     private static string[] GetTypesFromNamespace(string ns)
     {
-        List<string> types = new List<string>();
+        var types = new List<string>();
 
-        for (int i = 0; i < _matchedQualifiedTypes.Count; i++)
+        foreach (var typeName in ReadOnlyMatchedQualifiedTypes)
         {
-            var type = Type.GetType(_matchedQualifiedTypes[i]);
+            var type = Type.GetType(typeName);
+            if (type?.Namespace == null) continue;
             if (type.Namespace.StartsWith(ns))
             {
                 types.Add(type.AssemblyQualifiedName);
@@ -91,10 +90,10 @@ public static class Matcher
 
     private static bool GetType(string[] qualifiedTypes, string type, out Type sysType)
     {
-        for (int i = 0; i < qualifiedTypes.Length; i++)
+        foreach (var qualifiedType in qualifiedTypes)
         {
-            sysType = Type.GetType(qualifiedTypes[i]);
-            if (sysType.FullName == type || sysType.Name == type)
+            sysType = Type.GetType(qualifiedType);
+            if (sysType?.FullName == type || sysType?.Name == type)
             {
                 return true;
             }
@@ -113,7 +112,7 @@ public static class Matcher
         {
             if (predicate.Contains("*"))
             {
-                string ns = predicate.Substring(0, predicate.IndexOf("*") - 1);
+                string ns = predicate[..(predicate.IndexOf("*", StringComparison.Ordinal) - 1)];
 
                 string[] nsTypes = GetTypesFromNamespace(ns);
 

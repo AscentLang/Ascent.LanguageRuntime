@@ -1,30 +1,23 @@
-﻿using AscentLanguage.Parser;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using AscentLanguage.Parser;
+using AscentLanguage.Var;
 
-namespace AscentLanguage
+namespace AscentLanguage.Data
 {
     public class AscentScriptData
     {
-        public AscentScriptData()
-        {
-            Variables = new Dictionary<string, Var>();
-            Predicates = new List<string>();
-        }
-
         public AscentScriptData Clone()
         {
-            var clone = new AscentScriptData();
-            clone.Variables = new Dictionary<string, Var>(Variables);
-            clone.Predicates = new List<string>(Predicates);
+            var clone = new AscentScriptData
+            {
+                Variables = new Dictionary<string, Variable>(Variables),
+                Predicates = new List<string>(Predicates)
+            };
             return clone;
         }
 
-        public Dictionary<string, Var> Variables { get; set; }
-        public List<string> Predicates { get; set; }
-		public Dictionary<string, FunctionDefinition> Functions { get; set; } = new Dictionary<string, FunctionDefinition>();
+        public Dictionary<string, Variable> Variables { get; set; } = new();
+        public List<string> Predicates { get; set; } = new();
+        public Dictionary<string, FunctionDefinition> Functions { get; set; } = new();
 	}
 }

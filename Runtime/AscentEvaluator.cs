@@ -5,6 +5,8 @@ using AscentLanguage.Tokenizer;
 using AscentLanguage.Util;
 using System.Collections.Generic;
 using System.Linq;
+using AscentLanguage.Data;
+using AscentLanguage.Var;
 
 namespace AscentLanguage
 {
@@ -26,9 +28,9 @@ namespace AscentLanguage
 		{
 			cachedExpressions.Remove(expression);
 		}
-		public static Var Evaluate(string expression, out AscentScriptData ascentScriptData, AscentVariableMap? variableMap = null, bool cache = true, bool debug = false)
+		public static Variable Evaluate(string expression, out AscentScriptData ascentScriptData, AscentVariableMap? variableMap = null, bool cache = true, bool debug = false)
 		{
-			variableMap ??= new AscentVariableMap(new Dictionary<string, Var>());
+			variableMap ??= new AscentVariableMap(new Dictionary<string, Variable>());
 
 			ascentScriptData = new AscentScriptData();
 
@@ -46,7 +48,7 @@ namespace AscentLanguage
 				{
 					for (int i = 0; i < tokens.Length; i++)
 					{
-						AscentLog.WriteLine($"Token {i}: {tokens[i].type} - {tokens[i].tokenBuffer}");
+						AscentLog.WriteLine($"Token {i}: {tokens[i].Type} - {tokens[i].TokenBuffer}");
 					}
 				}
 
@@ -78,7 +80,7 @@ namespace AscentLanguage
 				if (cache)
 					cachedExpressions[expression] = new CacheData(toEvaluate.ToArray(), ascentScriptData.Functions);
 			}
-			Var result = 0f;
+			Variable result = 0f;
 			foreach (var evaluate in toEvaluate)
 			{
 				var eval = evaluate.Evaluate(variableMap, ascentScriptData);

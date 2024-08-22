@@ -6,12 +6,11 @@ namespace AscentLanguage.Parser
     {
         public FunctionDefinition(string name)
         {
-            this.name = name;
+            Name = name;
         }
 
-        public string name { get; set; }
-        public List<string> args { get; set; } = new List<string>();
-        public Expression[] contents { get; set; }
-        public bool defined { get; set; } //TODO: use this
+        public string Name { get; }
+        public List<string> Args { get; set; } = new();
+        public Expression[] Contents { get; set; }
     }
 }

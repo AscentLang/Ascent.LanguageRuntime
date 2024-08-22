@@ -1,4 +1,5 @@
-﻿using AscentLanguage.Functions;
+﻿#nullable enable
+using AscentLanguage.Functions;
 using AscentLanguage.Tokenizer;
 using AscentLanguage.Util;
 using System;
@@ -8,6 +9,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using AscentLanguage.Data;
+using AscentLanguage.Var;
 #if UNITY
 using UnityEngine;
 #endif
@@ -17,7 +20,7 @@ namespace AscentLanguage.Parser
     public abstract class Expression
     {
         public abstract bool Static { get; }
-        public abstract Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData);
+        public abstract Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData);
     }
 
     public class BinaryExpression : Expression
@@ -35,140 +38,104 @@ namespace AscentLanguage.Parser
 
         public override bool Static => Left.Static && Right.Static;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
-            var LeftValue = Left.Evaluate(ascentVariableMap, ascentScriptData);
-            var RightValue = Right.Evaluate(ascentVariableMap, ascentScriptData);
+            var leftValue = Left.Evaluate(ascentVariableMap, ascentScriptData);
+            var rightValue = Right.Evaluate(ascentVariableMap, ascentScriptData);
 
-            //Ensure float for all operations and string for concatenation
-            if (Operator.type == TokenType.Multiplication)
+            if (leftValue == null || rightValue == null)
             {
-                if (LeftValue.Type == VarType.Float && RightValue.Type == VarType.Float)
-                {
-                    Var result = new Var();
-                    result.SetValue(LeftValue.GetValue<float>() * RightValue.GetValue<float>(), VarType.Float);
-                    return result;
-                }
-                else
-                {
-                    throw new InvalidOperationException(String.Format("Multiplication requires two floats. Left Type {0}. Right Type {1}.", LeftValue.Type.ToString(), RightValue.Type.ToString()));
-                }
+                throw new FormatException("Left and right values must be non-null");
             }
 
-            if (Operator.type == TokenType.Division)
+            switch (Operator.Type)
             {
-                if (LeftValue.Type == VarType.Float && RightValue.Type == VarType.Float)
+                //Ensure float for all operations and string for concatenation
+                case TokenType.Multiplication when leftValue.Type == VarType.Float && rightValue.Type == VarType.Float:
                 {
-                    Var result = new Var();
-                    result.SetValue(LeftValue.GetValue<float>() / RightValue.GetValue<float>(), VarType.Float);
+                    var result = new Variable();
+                    result.SetValue(leftValue.GetValue<float>() * rightValue.GetValue<float>(), VarType.Float);
                     return result;
                 }
-                else
+                case TokenType.Multiplication:
+                    throw new InvalidOperationException(
+                        $"Multiplication requires two floats. Left Type {leftValue.Type.ToString()}. Right Type {rightValue.Type.ToString()}.");
+                case TokenType.Division when leftValue.Type == VarType.Float && rightValue.Type == VarType.Float:
                 {
-                    throw new InvalidOperationException(String.Format("Division requires two floats. Left Type {0}. Right Type {1}.", LeftValue.Type.ToString(), RightValue.Type.ToString()));
-                }
-            }
-
-            if (Operator.type == TokenType.Addition)
-            {
-                if (LeftValue.Type == VarType.Float && RightValue.Type == VarType.Float)
-                {
-                    Var result = new Var();
-                    result.SetValue(LeftValue.GetValue<float>() + RightValue.GetValue<float>(), VarType.Float);
+                    var result = new Variable();
+                    result.SetValue(leftValue.GetValue<float>() / rightValue.GetValue<float>(), VarType.Float);
                     return result;
                 }
-                else
+                case TokenType.Division:
+                    throw new InvalidOperationException(String.Format("Division requires two floats. Left Type {0}. Right Type {1}.", leftValue.Type.ToString(), rightValue.Type.ToString()));
+                case TokenType.Addition when leftValue.Type == VarType.Float && rightValue.Type == VarType.Float:
+                {
+                    Variable result = new Variable();
+                    result.SetValue(leftValue.GetValue<float>() + rightValue.GetValue<float>(), VarType.Float);
+                    return result;
+                }
+                case TokenType.Addition:
                 {
                     //check for implicit addition.
-                    var leftType = LeftValue.Value.GetType();
+                    var leftType = leftValue.Value.GetType();
                     var implicitAdd = leftType.GetMethod("op_Addition");
                     if (implicitAdd != null)
                     {
-                        var resultValue = implicitAdd.Invoke(null, new object[] { LeftValue.Value, RightValue.Value });
-                        Var var = new Var();
+                        var resultValue = implicitAdd.Invoke(null, new object[] { leftValue.Value, rightValue.Value });
+                        Variable var = new Variable();
                         var.SetValue(resultValue);
                         return var;
                     }
                     else
                     {
-                        Var result = new Var();
-                        result.SetValue(LeftValue.ToString() + RightValue.ToString(), VarType.String);
+                        Variable result = new Variable();
+                        result.SetValue(leftValue.ToString() + rightValue.ToString(), VarType.String);
                         return result;
                     }
                 }
-            }
-
-            if (Operator.type == TokenType.Subtraction)
-            {
-                if (LeftValue.Type == VarType.Float && RightValue.Type == VarType.Float)
+                case TokenType.Subtraction when leftValue.Type == VarType.Float && rightValue.Type == VarType.Float:
                 {
-                    Var result = new Var();
-                    result.SetValue(LeftValue.GetValue<float>() - RightValue.GetValue<float>(), VarType.Float);
+                    Variable result = new Variable();
+                    result.SetValue(leftValue.GetValue<float>() - rightValue.GetValue<float>(), VarType.Float);
                     return result;
                 }
-                else
+                case TokenType.Subtraction:
+                    throw new InvalidOperationException(String.Format("Subtraction requires two floats. Left Type {0}. Right Type {1}.", leftValue.Type.ToString(), rightValue.Type.ToString()));
+                case TokenType.Pow when leftValue.Type == VarType.Float && rightValue.Type == VarType.Float:
                 {
-                    throw new InvalidOperationException(String.Format("Subtraction requires two floats. Left Type {0}. Right Type {1}.", LeftValue.Type.ToString(), RightValue.Type.ToString()));
-                }
-            }
-
-            if (Operator.type == TokenType.Pow)
-            {
-                if (LeftValue.Type == VarType.Float && RightValue.Type == VarType.Float)
-                {
-                    Var result = new Var();
-                    result.SetValue((float)Math.Pow(LeftValue.GetValue<float>(), RightValue.GetValue<float>()), VarType.Float);
+                    Variable result = new Variable();
+                    result.SetValue((float)Math.Pow(leftValue.GetValue<float>(), rightValue.GetValue<float>()), VarType.Float);
                     return result;
                 }
-                else
+                case TokenType.Pow:
+                    throw new InvalidOperationException(String.Format("Pow requires two floats. Left Type {0}. Right Type {1}.", leftValue.Type.ToString(), rightValue.Type.ToString()));
+                case TokenType.Modulus when leftValue.Type == VarType.Float && rightValue.Type == VarType.Float:
                 {
-                    throw new InvalidOperationException(String.Format("Pow requires two floats. Left Type {0}. Right Type {1}.", LeftValue.Type.ToString(), RightValue.Type.ToString()));
-                }
-            }
-
-            if (Operator.type == TokenType.Modulus)
-            {
-                if (LeftValue.Type == VarType.Float && RightValue.Type == VarType.Float)
-                {
-                    Var result = new Var();
-                    result.SetValue(LeftValue.GetValue<float>() % RightValue.GetValue<float>(), VarType.Float);
+                    Variable result = new Variable();
+                    result.SetValue(leftValue.GetValue<float>() % rightValue.GetValue<float>(), VarType.Float);
                     return result;
                 }
-                else
+                case TokenType.Modulus:
+                    throw new InvalidOperationException(String.Format("Modulus requires two floats. Left Type {0}. Right Type {1}.", leftValue.Type.ToString(), rightValue.Type.ToString()));
+                case TokenType.GreaterThan when leftValue.Type == VarType.Float && rightValue.Type == VarType.Float:
                 {
-                    throw new InvalidOperationException(String.Format("Modulus requires two floats. Left Type {0}. Right Type {1}.", LeftValue.Type.ToString(), RightValue.Type.ToString()));
-                }
-            }
-
-            if (Operator.type == TokenType.GreaterThan)
-            {
-                if (LeftValue.Type == VarType.Float && RightValue.Type == VarType.Float)
-                {
-                    Var result = new Var();
-                    result.SetValue(LeftValue.GetValue<float>() > RightValue.GetValue<float>(), VarType.Bool);
+                    Variable result = new Variable();
+                    result.SetValue(leftValue.GetValue<float>() > rightValue.GetValue<float>(), VarType.Bool);
                     return result;
                 }
-                else
+                case TokenType.GreaterThan:
+                    throw new InvalidOperationException(String.Format("GreaterThan requires two floats. Left Type {0}. Right Type {1}.", leftValue.Type.ToString(), rightValue.Type.ToString()));
+                case TokenType.LesserThen when leftValue.Type == VarType.Float && rightValue.Type == VarType.Float:
                 {
-                    throw new InvalidOperationException(String.Format("GreaterThan requires two floats. Left Type {0}. Right Type {1}.", LeftValue.Type.ToString(), RightValue.Type.ToString()));
-                }
-            }
-
-            if (Operator.type == TokenType.LesserThen)
-            {
-                if (LeftValue.Type == VarType.Float && RightValue.Type == VarType.Float)
-                {
-                    Var result = new Var();
-                    result.SetValue(LeftValue.GetValue<float>() < RightValue.GetValue<float>(), VarType.Bool);
+                    Variable result = new Variable();
+                    result.SetValue(leftValue.GetValue<float>() < rightValue.GetValue<float>(), VarType.Bool);
                     return result;
                 }
-                else
-                {
-                    throw new InvalidOperationException(String.Format("LesserThen requires two floats. Left Type {0}. Right Type {1}.", LeftValue.Type.ToString(), RightValue.Type.ToString()));
-                }
+                case TokenType.LesserThen:
+                    throw new InvalidOperationException(String.Format("LesserThen requires two floats. Left Type {0}. Right Type {1}.", leftValue.Type.ToString(), rightValue.Type.ToString()));
+                default:
+                    throw new InvalidOperationException($"Unsupported operator: {Operator.TokenBuffer}");
             }
-
-            throw new InvalidOperationException($"Unsupported operator: {Operator.tokenBuffer}");
         }
     }
 
@@ -181,36 +148,36 @@ namespace AscentLanguage.Parser
             Token = token;
         }
 
-        public override bool Static => Token.type != TokenType.Query;
+        public override bool Static => Token.Type != TokenType.Query;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
-            switch (Token.type)
+            switch (Token.Type)
             {
                 case TokenType.Constant:
-                    Var result = new Var();
-                    result.SetValue(Utility.ConvertToFloat(Token.tokenBuffer), VarType.Float);
+                    Variable result = new Variable();
+                    result.SetValue(Utility.ConvertToFloat(Token.TokenBuffer), VarType.Float);
                     return result;
                 case TokenType.True:
-                    Var resultTrue = new Var();
+                    Variable resultTrue = new Variable();
                     resultTrue.SetValue(true, VarType.Bool);
                     return resultTrue;
                 case TokenType.False:
-                    Var resultFalse = new Var();
+                    Variable resultFalse = new Variable();
                     resultFalse.SetValue(false, VarType.Bool);
                     return resultFalse;
                 case TokenType.String:
-                    Var resultString = new Var();
-                    resultString.SetValue(Token.tokenBuffer, VarType.String);
+                    Variable resultString = new Variable();
+                    resultString.SetValue(Token.TokenBuffer, VarType.String);
                     return resultString;
                 case TokenType.Query:
-                    if (ascentVariableMap != null && ascentVariableMap.QueryVariables.TryGetValue(Token.tokenBuffer, out Var value))
+                    if (ascentVariableMap != null && ascentVariableMap.QueryVariables.TryGetValue(Token.TokenBuffer, out Variable value))
                     {
                         return value;
                     }
                     else
                     {
-                        Console.WriteLine($"Variable {Token.tokenBuffer} ({Token.tokenBuffer.Length}) not found in variable map");
+                        Console.WriteLine($"Variable {Token.TokenBuffer} ({Token.TokenBuffer.Length}) not found in variable map");
                         return 0f;
                     }
                 default:
@@ -234,14 +201,13 @@ namespace AscentLanguage.Parser
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
-            var name = FunctionToken.tokenBuffer;
+            var name = FunctionToken.TokenBuffer;
             var definition = ascentScriptData.Functions.FirstOrDefault(x => x.Key == name);
             if (definition.Value != null)
             {
-                definition.Value.contents = Contents;
-                definition.Value.defined = true;
+                definition.Value.Contents = Contents;
             }
             return null;
         }
@@ -264,7 +230,7 @@ namespace AscentLanguage.Parser
             Contents = contents;
         }
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             Defintion.Evaluate(ascentVariableMap, ascentScriptData);
             while (Condition.Evaluate(ascentVariableMap, ascentScriptData).GetValue<float>() > 0.5f)
@@ -297,7 +263,7 @@ namespace AscentLanguage.Parser
             Contents = contents;
         }
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             while (Condition.Evaluate(ascentVariableMap, ascentScriptData).GetValue<float>() > 0.5f)
             {
@@ -330,7 +296,7 @@ namespace AscentLanguage.Parser
             FalseExpression = falseExpr;
         }
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             var conditionValue = Condition.Evaluate(ascentVariableMap, ascentScriptData).GetValue<float>();
 
@@ -363,47 +329,44 @@ namespace AscentLanguage.Parser
             Arguments = arguments;
         }
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
-            var name = FunctionToken.tokenBuffer;
+            var name = FunctionToken.TokenBuffer;
             var function = AscentFunctions.GetFunction(name);
-            Var[] args = Arguments.Select(x => x.Evaluate(ascentVariableMap, ascentScriptData)).ToArray();
-            if (function == null)
+            Variable?[] args = Arguments.Select(x => x.Evaluate(ascentVariableMap, ascentScriptData)).ToArray();
+            if (function != null) return function.Evaluate(args);
+            if (ascentScriptData.Functions.TryGetValue(name, out var expressions))
             {
-                if (ascentScriptData != null && ascentScriptData.Functions.TryGetValue(name, out var expressions))
+                for (int i = 0; i < expressions.Args.Count; i++)
                 {
-                    for (int i = 0; i < expressions.args.Count; i++)
+                    if (args.Length > i)
                     {
-                        if (args.Length > i)
-                        {
-                            ascentScriptData.Variables[expressions.args[i]] = args[i];
-                        }
+                        ascentScriptData.Variables[expressions.Args[i]] = args[i];
                     }
-                    Var result = default;
-                    foreach (var expression in expressions.contents)
+                }
+                Variable? result = default;
+                foreach (var expression in expressions.Contents)
+                {
+                    var res = expression.Evaluate(ascentVariableMap, ascentScriptData);
+                    if (res != null)
                     {
-                        var res = expression.Evaluate(ascentVariableMap, ascentScriptData);
-                        if (res != null)
-                        {
-                            result = res;
-                        }
+                        result = res;
                     }
+                }
 
-                    for (int i = 0; i < expressions.args.Count; i++)
-                    {
-                        if (args.Length > i)
-                        {
-                            ascentScriptData.Variables.Remove(expressions.args[i]);
-                        }
-                    }
-                    return result;
-                }
-                else
+                for (int i = 0; i < expressions.Args.Count; i++)
                 {
-                    throw new ArgumentException($"Function {name} does not exist!");
+                    if (args.Length > i)
+                    {
+                        ascentScriptData.Variables.Remove(expressions.Args[i]);
+                    }
                 }
+                return result;
             }
-            return function.Evaluate(args);
+            else
+            {
+                throw new ArgumentException($"Function {name} does not exist!");
+            }
         }
     }
 
@@ -420,7 +383,7 @@ namespace AscentLanguage.Parser
 
         public override bool Static => Assignment.Static;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             if (ascentVariableMap == null)
             {
@@ -430,7 +393,7 @@ namespace AscentLanguage.Parser
             {
                 throw new InvalidOperationException("Assignment Expression cannot be null");
             }
-            ascentScriptData.Variables[VariableToken.tokenBuffer] = Assignment?.Evaluate(ascentVariableMap, ascentScriptData) ?? 0f;
+            ascentScriptData.Variables[VariableToken.TokenBuffer] = Assignment?.Evaluate(ascentVariableMap, ascentScriptData) ?? 0f;
             return null;
         }
     }
@@ -446,13 +409,13 @@ namespace AscentLanguage.Parser
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             if (ascentVariableMap == null)
             {
                 throw new InvalidOperationException("Variable map cannot be null");
             }
-            if (ascentScriptData.Variables.TryGetValue(VariableToken.tokenBuffer, out Var value))
+            if (ascentScriptData.Variables.TryGetValue(VariableToken.TokenBuffer, out Variable value))
             {
                 return value;
             }
@@ -471,18 +434,17 @@ namespace AscentLanguage.Parser
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData ascentScriptData)
         {
             if (ascentVariableMap == null)
             {
                 throw new InvalidOperationException("Variable map cannot be null");
             }
-            if (ascentScriptData.Variables.TryGetValue(VariableToken.tokenBuffer, out Var value))
-            {
-                ascentScriptData.Variables[VariableToken.tokenBuffer] = value.GetValue<float>() + 1;
-                return ascentScriptData.Variables[VariableToken.tokenBuffer];
-            }
-            return null;
+
+            if (!ascentScriptData.Variables.TryGetValue(VariableToken.TokenBuffer, out var value)) return null;
+            
+            ascentScriptData.Variables[VariableToken.TokenBuffer] = value.GetValue<float>() + 1;
+            return ascentScriptData.Variables[VariableToken.TokenBuffer];
         }
     }
 
@@ -497,16 +459,16 @@ namespace AscentLanguage.Parser
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             if (ascentVariableMap == null)
             {
                 throw new InvalidOperationException("Variable map cannot be null");
             }
-            if (ascentScriptData.Variables.TryGetValue(VariableToken.tokenBuffer, out Var value))
+            if (ascentScriptData.Variables.TryGetValue(VariableToken.TokenBuffer, out Variable value))
             {
-                ascentScriptData.Variables[VariableToken.tokenBuffer] = value.GetValue<float>() - 1;
-                return ascentScriptData.Variables[VariableToken.tokenBuffer];
+                ascentScriptData.Variables[VariableToken.TokenBuffer] = value.GetValue<float>() - 1;
+                return ascentScriptData.Variables[VariableToken.TokenBuffer];
             }
             return null;
         }
@@ -525,16 +487,16 @@ namespace AscentLanguage.Parser
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             if (ascentVariableMap == null)
             {
                 throw new InvalidOperationException("Variable map cannot be null");
             }
-            if (ascentScriptData.Variables.TryGetValue(VariableToken.tokenBuffer, out Var value))
+            if (ascentScriptData.Variables.TryGetValue(VariableToken.TokenBuffer, out Variable value))
             {
-                ascentScriptData.Variables[VariableToken.tokenBuffer] = value.GetValue<float>() + (Expression.Evaluate(ascentVariableMap, ascentScriptData)?.GetValue<float>() ?? 0f);
-                return ascentScriptData.Variables[VariableToken.tokenBuffer];
+                ascentScriptData.Variables[VariableToken.TokenBuffer] = value.GetValue<float>() + (Expression.Evaluate(ascentVariableMap, ascentScriptData)?.GetValue<float>() ?? 0f);
+                return ascentScriptData.Variables[VariableToken.TokenBuffer];
             }
             return null;
         }
@@ -553,16 +515,16 @@ namespace AscentLanguage.Parser
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             if (ascentVariableMap == null)
             {
                 throw new InvalidOperationException("Variable map cannot be null");
             }
-            if (ascentScriptData.Variables.TryGetValue(VariableToken.tokenBuffer, out Var value))
+            if (ascentScriptData.Variables.TryGetValue(VariableToken.TokenBuffer, out Variable value))
             {
-                ascentScriptData.Variables[VariableToken.tokenBuffer] = value.GetValue<float>() - (Expression.Evaluate(ascentVariableMap, ascentScriptData)?.GetValue<float>() ?? 0f);
-                return ascentScriptData.Variables[VariableToken.tokenBuffer];
+                ascentScriptData.Variables[VariableToken.TokenBuffer] = value.GetValue<float>() - (Expression.Evaluate(ascentVariableMap, ascentScriptData)?.GetValue<float>() ?? 0f);
+                return ascentScriptData.Variables[VariableToken.TokenBuffer];
             }
             return null;
         }
@@ -579,7 +541,7 @@ namespace AscentLanguage.Parser
 
         public override bool Static => true;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             return null;
         }
@@ -596,7 +558,7 @@ namespace AscentLanguage.Parser
 
         public override bool Static => Expression.Static;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             return Expression.Evaluate(ascentVariableMap, ascentScriptData);
         }
@@ -608,12 +570,12 @@ namespace AscentLanguage.Parser
 
         public NamespaceExpression(Token token)
         {
-            name = token.tokenBuffer;
+            name = token.TokenBuffer;
         }
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             return null;
         }
@@ -625,12 +587,12 @@ namespace AscentLanguage.Parser
 
         public UsingExpression(Token token)
         {
-            predicate = token.tokenBuffer;
+            predicate = token.TokenBuffer;
         }
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             return null;
         }
@@ -643,29 +605,29 @@ namespace AscentLanguage.Parser
 
         public ImportExpression(Token token)
         {
-            var splits = token.tokenBuffer.Split('^');
+            var splits = token.TokenBuffer.Split('^');
             name = splits[0];
             type = splits[1];
         }
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             if (ascentVariableMap.ImportVariables.TryGetValue(name, out var importVar))
             {
                 VarType inputType = (VarType)importVar.type;
-                ascentScriptData.Variables[name] = new Var(inputType, importVar.Get());
+                ascentScriptData.Variables[name] = new Variable(inputType, importVar.Get());
             }
 #if UNITY
             else if (ascentVariableMap.ImportVariablesUnity.TryGetValue(name, out var importVarUnity))
             {
-                ascentScriptData.Variables[name] = new Var(VarType.Object, importVarUnity.value);
+                ascentScriptData.Variables[name] = new Variable(VarType.Object, importVarUnity.value);
             }
 #endif
             else
             {
-                ascentScriptData.Variables[name] = new Var(VarType.Object, null);
+                ascentScriptData.Variables[name] = new Variable(VarType.Object, null);
             }
             return null;
         }
@@ -684,22 +646,22 @@ namespace AscentLanguage.Parser
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             var result = Left.Evaluate(ascentVariableMap, ascentScriptData);
             var type = result.Value.GetType();
-            var field = type.GetField(Right.tokenBuffer);
+            var field = type.GetField(Right.TokenBuffer);
             if (field == null)
             {
-                var property = type.GetProperty(Right.tokenBuffer);
+                var property = type.GetProperty(Right.TokenBuffer);
                 if (property == null)
                 {
-                    throw new InvalidOperationException($"Field {Right.tokenBuffer} not found in type {type.Name}");
+                    throw new InvalidOperationException($"Field {Right.TokenBuffer} not found in type {type.Name}");
                 }
                 else
                 {
                     var resultValue = property.GetValue(result.Value);
-                    Var var = new Var();
+                    Variable var = new Variable();
                     var.SetValue(resultValue);
                     return var;
                 }
@@ -707,7 +669,7 @@ namespace AscentLanguage.Parser
             else
             {
                 var resultValue = field.GetValue(result.Value);
-                Var var = new Var();
+                Variable var = new Variable();
                 var.SetValue(resultValue);
                 return var;
             }
@@ -727,7 +689,7 @@ namespace AscentLanguage.Parser
 
         public override bool Static => false;
 
-        public override Var? Evaluate(AscentVariableMap? ascentVariableMap, AscentScriptData? ascentScriptData)
+        public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             var leftObject = Left.Left.Evaluate(ascentVariableMap, ascentScriptData).Value;
             var leftAccess = Left.Right;
@@ -735,13 +697,13 @@ namespace AscentLanguage.Parser
             var rightResult = Right.Evaluate(ascentVariableMap, ascentScriptData).Value;
 
             var type = leftObject.GetType();
-            var field = type.GetField(leftAccess.tokenBuffer);
+            var field = type.GetField(leftAccess.TokenBuffer);
             if (field == null)
             {
-                var property = type.GetProperty(leftAccess.tokenBuffer);
+                var property = type.GetProperty(leftAccess.TokenBuffer);
                 if (property == null)
                 {
-                    throw new InvalidOperationException($"Field {leftAccess.tokenBuffer} not found in type {type.Name}");
+                    throw new InvalidOperationException($"Field {leftAccess.TokenBuffer} not found in type {type.Name}");
                 }
                 else
                 {

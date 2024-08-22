@@ -1,36 +1,32 @@
-﻿using AscentLanguage.Tokenizer;
-using System;
+﻿#nullable enable
+using AscentLanguage.Tokenizer;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AscentLanguage.Splitter
 {
     public abstract class TokenContainer
     {
-        public TokenContainer(TokenContainer? parentContainer)
+        protected TokenContainer(TokenContainer? parentContainer)
         {
-            this.parentContainer = parentContainer;
+            ParentContainer = parentContainer;
         }
-        public TokenContainer? parentContainer { get; set; }
+        public TokenContainer? ParentContainer { get; protected set; }
     }
     public class SingleTokenContainer : TokenContainer
     {
         public SingleTokenContainer(TokenContainer parentContainer, Token[] expression) : base(parentContainer)
         {
-            this.Expression = expression;
+            Expression = expression;
         }
-        public Token[] Expression { get; set; }
+        public Token[] Expression { get; }
     }
 
     public class MultipleTokenContainer : TokenContainer
     {
         public MultipleTokenContainer(TokenContainer? parentContainer) : base(parentContainer)
         {
-            this.parentContainer = parentContainer;
+            ParentContainer = parentContainer;
         }
-        public List<TokenContainer> tokenContainers { get; set; } = new List<TokenContainer>();
+        public List<TokenContainer> TokenContainers { get; set; } = new ();
     }
 }

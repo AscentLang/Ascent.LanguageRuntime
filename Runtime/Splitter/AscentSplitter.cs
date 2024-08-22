@@ -8,71 +8,77 @@ namespace AscentLanguage.Splitter
         public static TokenContainer SplitTokens(List<Token> tokens)
         {
             var rootContainer = new MultipleTokenContainer(null);
-            int _position = 0;
-            List<Token> buffer = new List<Token>();
-            MultipleTokenContainer? currentScope = rootContainer;
-            bool split = true;
-            while (_position < tokens.Count)
+            var position = 0;
+            var buffer = new List<Token>();
+            var currentScope = rootContainer;
+            var split = true;
+            while (position < tokens.Count)
             {
-                var token = tokens[_position];
-                if (token.type == TokenType.LeftScope)
+                var token = tokens[position];
+                if (token.Type == TokenType.LeftScope)
                 {
                     if (buffer.Count > 0)
                     {
                         buffer.Add(token);
-                        _position++;
-                        token = tokens[_position];
-                        currentScope?.tokenContainers.Add(new SingleTokenContainer(currentScope, buffer.ToArray()));
+                        position++;
+                        token = tokens[position];
+                        currentScope?.TokenContainers.Add(new SingleTokenContainer(currentScope, buffer.ToArray()));
                         buffer.Clear();
                     }
                 }
-                if (token.type == TokenType.RightScope)
+                switch (token.Type)
                 {
-                    if (buffer.Count > 0)
+                    case TokenType.RightScope:
                     {
-                        currentScope?.tokenContainers.Add(new SingleTokenContainer(currentScope, buffer.ToArray()));
-                        buffer.Clear();
+                        if (buffer.Count > 0)
+                        {
+                            currentScope?.TokenContainers.Add(new SingleTokenContainer(currentScope, buffer.ToArray()));
+                            buffer.Clear();
 
+                        }
+                        currentScope?.TokenContainers.Add(new SingleTokenContainer(currentScope, new Token[] { token }));
+                        currentScope = currentScope?.ParentContainer as MultipleTokenContainer;
+                        break;
                     }
-                    currentScope?.tokenContainers.Add(new SingleTokenContainer(currentScope, new Token[] { token }));
-                    currentScope = currentScope?.parentContainer as MultipleTokenContainer;
+                    case TokenType.FunctionDefinition:
+                    {
+                        var newScope = new MultipleTokenContainer(currentScope);
+                        currentScope?.TokenContainers.Add(newScope);
+                        currentScope = newScope;
+                        break;
+                    }
+                    case TokenType.ForLoop:
+                    {
+                        var newScope = new MultipleTokenContainer(currentScope);
+                        currentScope?.TokenContainers.Add(newScope);
+                        currentScope = newScope;
+                        break;
+                    }
+                    case TokenType.WhileLoop:
+                    {
+                        var newScope = new MultipleTokenContainer(currentScope);
+                        currentScope?.TokenContainers.Add(newScope);
+                        currentScope = newScope;
+                        break;
+                    }
+                    case TokenType.LeftParenthesis:
+                        split = false;
+                        break;
+                    case TokenType.RightParenthesis:
+                        split = true;
+                        break;
                 }
-                if (token.type == TokenType.FunctionDefinition)
+
+                if (token.Type != TokenType.SemiColon)
                 {
-                    var newScope = new MultipleTokenContainer(currentScope);
-                    currentScope?.tokenContainers.Add(newScope);
-                    currentScope = newScope;
-                }
-                if (token.type == TokenType.ForLoop)
-                {
-                    var newScope = new MultipleTokenContainer(currentScope);
-                    currentScope?.tokenContainers.Add(newScope);
-                    currentScope = newScope;
-                }
-                if (token.type == TokenType.WhileLoop)
-                {
-                    var newScope = new MultipleTokenContainer(currentScope);
-                    currentScope?.tokenContainers.Add(newScope);
-                    currentScope = newScope;
-                }
-                if (token.type == TokenType.LeftParenthesis)
-                {
-                    split = false;
-                }
-                if (token.type == TokenType.RightParenthesis)
-                {
-                    split = true;
-                }
-                if (token.type != TokenType.SemiColon)
-                {
-                    if (token.type != TokenType.RightScope)
+                    if (token.Type != TokenType.RightScope)
                         buffer.Add(token);
                 }
                 else
                 {
                     if (split)
                     {
-                        currentScope?.tokenContainers.Add(new SingleTokenContainer(currentScope, buffer.ToArray()));
+                        currentScope?.TokenContainers.Add(new SingleTokenContainer(currentScope, buffer.ToArray()));
                         buffer.Clear();
                     }
                     else
@@ -80,13 +86,12 @@ namespace AscentLanguage.Splitter
                         buffer.Add(token);
                     }
                 }
-                _position++;
+                position++;
             }
-            if (buffer.Count > 0)
-            {
-                currentScope?.tokenContainers.Add(new SingleTokenContainer(currentScope, buffer.ToArray()));
-                buffer.Clear();
-            }
+
+            if (buffer.Count <= 0) return rootContainer;
+            currentScope?.TokenContainers.Add(new SingleTokenContainer(currentScope, buffer.ToArray()));
+            buffer.Clear();
             return rootContainer;
         }
     }

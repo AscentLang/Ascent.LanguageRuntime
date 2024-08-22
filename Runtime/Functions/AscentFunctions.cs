@@ -1,13 +1,14 @@
-﻿using AscentLanguage.Util;
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AscentLanguage.Var;
 
 namespace AscentLanguage.Functions
 {
 	public static class AscentFunctions
 	{
-		private readonly static Dictionary<string, Function> functions = new Dictionary<string, Function>()
+		private static readonly Dictionary<string, Function> functions = new ()
 		{
 			{ "sin", new SinFunction() },
 			{ "cos", new CosFunction() },
@@ -28,135 +29,130 @@ namespace AscentLanguage.Functions
 
 		public static Function? GetFunction(string name)
 		{
-			if (functions.ContainsKey(name)) return functions[name];
-			return null;
-		}
-		public static bool SearchAnyFunctions(char c)
-		{
-			return Utility.SearchForPotential(c, functions.Keys.ToList());
+			return functions.TryGetValue(name, out var function) ? function : null;
 		}
 		public abstract class Function
 		{
-			public abstract Var Evaluate(Var[] input);
+			public abstract Variable Evaluate(Variable[] input);
 		}
 
-		public class SinFunction : Function
+		private class SinFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 1) return 0f;
 				return (float)Math.Sin(input[0].GetValue<float>());
 			}
 		}
 
-		public class CosFunction : Function
+		private class CosFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 1) return 0f;
 				return (float)Math.Cos(input[0].GetValue<float>());
 			}
 		}
 
-		public class TanFunction : Function
+		private class TanFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 1) return 0f;
 				return (float)Math.Tan(input[0].GetValue<float>());
 			}
 		}
 
-		public class ClampFunction : Function
+		private class ClampFunction : Function
 		{
 			private float Clamp(float value, float min, float max)
 			{
 				return Math.Max(min, Math.Min(max, value));
 			}
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 3) return 0f;
 				return Clamp(input[0].GetValue<float>(), input[1].GetValue<float>(), input[2].GetValue<float>());
 			}
 		}
 
-		public class SignFunction : Function
+		private class SignFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 1) return 0f;
 				return Math.Sign(input[0].GetValue<float>());
 			}
 		}
 
-		public class SqrtFunction : Function
+		private class SqrtFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 1) return 0f;
 				return (float)Math.Sqrt(input[0].GetValue<float>());
 			}
 		}
 
-		public class IntFunction : Function
+		private class IntFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 1) return 0f;
 				return (int)input[0].GetValue<float>();
 			}
 		}
 
-		public class AbsFunction : Function
+		private class AbsFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 1) return 0f;
 				return Math.Abs(input[0].GetValue<float>());
 			}
 		}
 
-		public class LerpFunction : Function
+		private class LerpFunction : Function
 		{
-			private float Lerp(float a, float b, float t)
+			private static float Lerp(float a, float b, float t)
 			{
 				return a + t * (b - a);
 			}
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 3) return 0f;
 				return Lerp(input[0].GetValue<float>(), input[1].GetValue<float>(), input[2].GetValue<float>());
 			}
 		}
 
-		public class PowFunction : Function
+		private class PowFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 2) return 0f;
 				return (float)Math.Pow(input[0].GetValue<float>(), input[1].GetValue<float>());
 			}
 		}
 
-		public class ExpFunction : Function
+		private class ExpFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 1) return 0f;
 				return (float)Math.Exp(input[0].GetValue<float>());
 			}
 		}
 
-		public class FracFunction : Function
+		private class FracFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 1) return 0f;
 				return input[0].GetValue<float>() - (float)Math.Floor(input[0].GetValue<float>());
 			}
 		}
 
-		public class BezierCurveXFunction : Function
+		private class BezierCurveXFunction : Function
 		{
 			private static float BezierCurveX(float x0, float x1, float x2, float x3, float t)
 			{
@@ -166,14 +162,14 @@ namespace AscentLanguage.Functions
 						   Math.Pow(t, 3) * x3;
 				return (float)x;
 			}
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 5) return 0f;
 				return BezierCurveX(input[0].GetValue<float>(), input[1].GetValue<float>(), input[2].GetValue<float>(), input[3].GetValue<float>(), input[4].GetValue<float>());
 			}
 		}
 
-		public class BezierCurveYFunction : Function
+		private class BezierCurveYFunction : Function
 		{
 			private static float BezierCurveY(float y0, float y1, float y2, float y3, float t)
 			{
@@ -183,16 +179,16 @@ namespace AscentLanguage.Functions
 						   Math.Pow(t, 3) * y3;
 				return (float)y;
 			}
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 5) return 0f;
 				return BezierCurveY(input[0].GetValue<float>(), input[1].GetValue<float>(), input[2].GetValue<float>(), input[3].GetValue<float>(), input[4].GetValue<float>());
 			}
 		}
 
-		public class DebugFunction : Function
+		private class DebugFunction : Function
 		{
-			public override Var Evaluate(Var[] input)
+			public override Variable Evaluate(Variable[] input)
 			{
 				if (input.Length < 1) return 0f;
 				AscentLog.WriteLine("DEBUG " + input.Select(x => x.ToString()).Aggregate((x1, x2) => x1 + ", " + x2));

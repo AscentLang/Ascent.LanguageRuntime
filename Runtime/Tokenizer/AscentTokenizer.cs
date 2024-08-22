@@ -93,17 +93,17 @@ namespace AscentLanguage.Tokenizer
 						{
 							case FunctionDefinitionTokenizer:
 							{
-								scope.Push(token.tokenBuffer);
+								scope.Push(token.TokenBuffer);
 								break;
 							}
 							case ForLoopTokenizer:
 							{
-								scope.Push(scope.Peek() + "_" + token.tokenBuffer);
+								scope.Push(scope.Peek() + "_" + token.TokenBuffer);
 								break;
 							}
 							case WhileLoopTokenizer:
 							{
-								scope.Push(scope.Peek() + "_" + token.tokenBuffer);
+								scope.Push(scope.Peek() + "_" + token.TokenBuffer);
 								break;
 							}
 							case SingleCharTokenizer { Token: '}' }:

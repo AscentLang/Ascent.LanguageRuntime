@@ -54,7 +54,7 @@ namespace AscentLanguage.Tokenizer
             if (existingTokens != null && existingTokens.Count > 0)
             {
                 Token lastToken = existingTokens[existingTokens.Count - 1];
-                if (lastToken.type == TokenType.Constant || lastToken.type == TokenType.Variable || lastToken.type == TokenType.Query)
+                if (lastToken.Type == TokenType.Constant || lastToken.Type == TokenType.Variable || lastToken.Type == TokenType.Query)
                 {
                     return peekChar == '-';
                 }
@@ -214,7 +214,7 @@ namespace AscentLanguage.Tokenizer
     {
         public override Token GetToken(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope)
         {
-            var args = functionDefs?.FirstOrDefault(x => x.name == scope)?.args ?? new List<string>();
+            var args = functionDefs?.FirstOrDefault(x => x.Name == scope)?.Args ?? new List<string>();
             var stringBuilder = new StringBuilder();
             var check = 0;
             while (!variableDefs.Contains(stringBuilder.ToString()) && !args.Contains(stringBuilder.ToString()) && check < 25)
@@ -228,7 +228,7 @@ namespace AscentLanguage.Tokenizer
 
         public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
         {
-            var args = functionDefs?.FirstOrDefault(x => x.name == scope)?.args ?? new List<string>();
+            var args = functionDefs?.FirstOrDefault(x => x.Name == scope)?.Args ?? new List<string>();
             if (!Utility.SearchForPotential((char)peekChar, variableDefs) && !Utility.SearchForPotential((char)peekChar, args)) return false;
 
             var stringBuilder = new StringBuilder();
@@ -268,7 +268,7 @@ namespace AscentLanguage.Tokenizer
                 if (stream.Position >= stream.Length) break;
             }
             var match = stringBuilder.ToString();
-            return AscentFunctions.GetFunction(match) != null || functionDefs.Any(x => x.name == match);
+            return AscentFunctions.GetFunction(match) != null || functionDefs.Any(x => x.Name == match);
         }
     }
 
@@ -333,7 +333,7 @@ namespace AscentLanguage.Tokenizer
                 stringBuilder.Append(br.ReadChar());
                 if (stream.Position >= stream.Length) break;
             }
-            functionDefs.First(x => x.name == name).args.Add(stringBuilder.ToString());
+            functionDefs.First(x => x.Name == name).Args.Add(stringBuilder.ToString());
             return new Token(TokenType.FunctionArgument, stringBuilder.ToString());
         }
 
@@ -341,15 +341,15 @@ namespace AscentLanguage.Tokenizer
         {
             TokenType[] allowedTokens = { TokenType.LeftParenthesis, TokenType.Comma, TokenType.FunctionArgument };
             int back = 0;
-            while (existingTokens != null && existingTokens.Count > back && allowedTokens.Contains(existingTokens[existingTokens.Count - back - 1].type))
+            while (existingTokens != null && existingTokens.Count > back && allowedTokens.Contains(existingTokens[existingTokens.Count - back - 1].Type))
             {
                 back++;
             }
             if (existingTokens == null || existingTokens.Count < back + 1) return false;
             var def = existingTokens[existingTokens.Count - back - 1];
-            if (existingTokens[existingTokens.Count - back - 1].type == TokenType.FunctionDefinition)
+            if (existingTokens[existingTokens.Count - back - 1].Type == TokenType.FunctionDefinition)
             {
-                name = def.tokenBuffer;
+                name = def.TokenBuffer;
                 return true;
             }
             return false;
