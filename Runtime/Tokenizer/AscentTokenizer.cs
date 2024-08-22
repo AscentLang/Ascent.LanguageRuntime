@@ -56,63 +56,69 @@ namespace AscentLanguage.Tokenizer
 
 		public static Token[] Tokenize(string expression)
 		{
-			List<string> variableDefinitions = new List<string>();
-			List<FunctionDefinition> functionDefinitions = new List<FunctionDefinition>();
-			List<Token> tokens = new List<Token>();
-			Stack<string> scope = new Stack<string>();
+			var variableDefinitions = new List<string>();
+			var functionDefinitions = new List<FunctionDefinition>();
+			var tokens = new List<Token>();
+			var scope = new Stack<string>();
 			scope.Push("GLOBAL");
 
-			string trimmedExpression = "";
+			var trimmedExpression = "";
 
-			var cr = expression.ToCharArray();
-			int quoteIdx = 0;
-			for (int i = 0; i < cr.Length; i++)
+			var charArray = expression.ToCharArray();
+			var quoteIdx = 0;
+			foreach (var chr in charArray)
 			{
-				if (cr[i] == '"')
+				if (chr == '"')
 				{
 					quoteIdx++;
 					trimmedExpression += "";
 				}
 
-				if (!char.IsWhiteSpace(cr[i]) || quoteIdx % 2 == 1)
+				if (!char.IsWhiteSpace(chr) || quoteIdx % 2 == 1)
 				{
-					trimmedExpression += cr[i];
+					trimmedExpression += chr;
 				}
 			}
 
-			int strLength = trimmedExpression.Length;
-			MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(trimmedExpression));
-			BinaryReader br = new BinaryReader(stream, Encoding.UTF8);
+			var strLength = trimmedExpression.Length;
+			var stream = new MemoryStream(Encoding.UTF8.GetBytes(trimmedExpression));
+			var br = new BinaryReader(stream, Encoding.UTF8);
 			while (stream.Position < strLength)
 			{
-				int peek = br.PeekChar(); //Store peek char for efficiency
-				bool succeeded = false;
+				var peek = br.PeekChar(); //Store peek char for efficiency
+				var succeeded = false;
 				foreach (var tokenizer in tokenizers)
 				{
-					long position = stream.Position;
+					var position = stream.Position;
 					if (tokenizer.IsMatch(peek, br, stream, ref variableDefinitions, ref functionDefinitions, scope.Peek(), tokens))
 					{
 						stream.Position = position;
 						tokens.Add(tokenizer.GetToken(peek, br, stream, ref variableDefinitions, ref functionDefinitions, scope.Peek()));
-						if (tokenizer is FunctionDefinitionTokenizer)
+						switch (tokenizer)
 						{
-							var token = tokens.Last();
-							scope.Push(token.tokenBuffer);
+							case FunctionDefinitionTokenizer:
+							{
+								var token = tokens.Last();
+								scope.Push(token.tokenBuffer);
+								break;
+							}
+							case ForLoopTokenizer:
+							{
+								var token = tokens.Last();
+								scope.Push(scope.Peek() + "_" + token.tokenBuffer);
+								break;
+							}
+							case WhileLoopTokenizer:
+							{
+								var token = tokens.Last();
+								scope.Push(scope.Peek() + "_" + token.tokenBuffer);
+								break;
+							}
+							case SingleCharTokenizer { Token: '}' }:
+								scope.Pop();
+								break;
 						}
-						if (tokenizer is ForLoopTokenizer)
-						{
-							var token = tokens.Last();
-							scope.Push(scope.Peek() + "_" + token.tokenBuffer);
-						}
-						if (tokenizer is WhileLoopTokenizer)
-						{
-							var token = tokens.Last();
-							scope.Push(scope.Peek() + "_" + token.tokenBuffer);
-						}
-						if (tokenizer is SingleCharTokenizer singleCharTokenizer && singleCharTokenizer.Token == '}')
-						{
-							scope.Pop();
-						}
+
 						succeeded = true;
 						break;
 					}

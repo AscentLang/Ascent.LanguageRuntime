@@ -1,4 +1,5 @@
-﻿using AscentLanguage.Parser;
+﻿#nullable enable
+using AscentLanguage.Parser;
 using AscentLanguage.Splitter;
 using AscentLanguage.Tokenizer;
 using AscentLanguage.Util;
@@ -11,34 +12,31 @@ namespace AscentLanguage
 	{
 		private class CacheData
 		{
-			internal Expression[] expressions;
-			internal Dictionary<string, FunctionDefinition> functions;
+			internal readonly Expression[] Expressions;
+			internal readonly Dictionary<string, FunctionDefinition> Functions;
 
 			public CacheData(Expression[] expressions, Dictionary<string, FunctionDefinition> functions)
 			{
-				this.expressions = expressions;
-				this.functions = functions;
+				this.Expressions = expressions;
+				this.Functions = functions;
 			}
 		}
-		private static Dictionary<string, CacheData> cachedExpressions = new Dictionary<string, CacheData>();
+		private static readonly Dictionary<string, CacheData> cachedExpressions = new Dictionary<string, CacheData>();
 		public static void ClearCache(string expression)
 		{
 			cachedExpressions.Remove(expression);
 		}
 		public static Var Evaluate(string expression, out AscentScriptData ascentScriptData, AscentVariableMap? variableMap = null, bool cache = true, bool debug = false)
 		{
-			if (variableMap == null)
-			{
-				variableMap = new AscentVariableMap(new Dictionary<string, Var>());
-			}
+			variableMap ??= new AscentVariableMap(new Dictionary<string, Var>());
 
 			ascentScriptData = new AscentScriptData();
 
 			List<Expression> toEvaluate = new List<Expression>();
 			if (cachedExpressions.ContainsKey(expression) && cache)
 			{
-				toEvaluate = cachedExpressions[expression].expressions.ToList();
-				ascentScriptData.Functions = cachedExpressions[expression].functions;
+				toEvaluate = cachedExpressions[expression].Expressions.ToList();
+				ascentScriptData.Functions = cachedExpressions[expression].Functions;
 			}
 			else
 			{
@@ -48,7 +46,7 @@ namespace AscentLanguage
 				{
 					for (int i = 0; i < tokens.Length; i++)
 					{
-						//Debug.Log($"Token {i}: {tokens[i].type} - {new string(tokens[i].tokenBuffer)}");
+						AscentLog.WriteLine($"Token {i}: {tokens[i].type} - {tokens[i].tokenBuffer}");
 					}
 				}
 
@@ -56,7 +54,7 @@ namespace AscentLanguage
 				if (debug)
 				{
 					Utility.PrintTokenContainer(containers);
-					//Debug.Log("\n");
+					AscentLog.Write("\n");
 				}
 
 				var parser = new AscentParser(containers as MultipleTokenContainer);
@@ -65,17 +63,17 @@ namespace AscentLanguage
 
 				if (debug)
 				{
-					//Debug.Log($"Parsed {parsedExpressions.Count} expressions");
+					AscentLog.WriteLine($"Parsed {parsedExpressions.Count} expressions");
 				}
 
-				for (int i = 0; i < parsedExpressions.Count; i++)
+				foreach (var t in parsedExpressions)
 				{
 					if (debug)
 					{
-						Utility.PrintExpression(parsedExpressions[i]);
+						Utility.PrintExpression(t);
 					}
 
-					toEvaluate.Add(parsedExpressions[i]);
+					toEvaluate.Add(t);
 				}
 				if (cache)
 					cachedExpressions[expression] = new CacheData(toEvaluate.ToArray(), ascentScriptData.Functions);

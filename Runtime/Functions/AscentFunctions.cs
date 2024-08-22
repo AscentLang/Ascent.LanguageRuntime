@@ -195,7 +195,7 @@ namespace AscentLanguage.Functions
 			public override Var Evaluate(Var[] input)
 			{
 				if (input.Length < 1) return 0f;
-				UnitySystemConsole.WriteLine("DEBUG " + input.Select(x => x.ToString()).Aggregate((x1, x2) => x1 + ", " + x2));
+				AscentLog.WriteLine("DEBUG " + input.Select(x => x.ToString()).Aggregate((x1, x2) => x1 + ", " + x2));
 				return 0f;
 
 			}

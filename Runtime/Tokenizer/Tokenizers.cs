@@ -133,7 +133,7 @@ namespace AscentLanguage.Tokenizer
         private static readonly Tokenizer qTokenizer = new SingleCharTokenizer('q', TokenType.Query, false);
         private static readonly Tokenizer queryTokenizer = new WordMatchTokenizer("query", TokenType.Query);
 
-        public static bool ContinueFeedingQuery(int chara)
+        private static bool ContinueFeedingQuery(int chara)
         {
             return (chara >= 'a' && chara <= 'z') || (chara >= 'A' && chara <= 'Z');
         }
@@ -151,13 +151,9 @@ namespace AscentLanguage.Tokenizer
 
         public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
         {
-            bool qMatch = qTokenizer.IsMatch(peekChar, br, stream, ref variableDefs, ref functionDefs, scope, existingTokens);
-            bool queryMatch = queryTokenizer.IsMatch(peekChar, br, stream, ref variableDefs, ref functionDefs, scope, existingTokens);
-            if ((queryMatch || qMatch) && br.ReadChar() == '.')
-            {
-                return true;
-            }
-            return false;
+            var qMatch = qTokenizer.IsMatch(peekChar, br, stream, ref variableDefs, ref functionDefs, scope, existingTokens);
+            var queryMatch = queryTokenizer.IsMatch(peekChar, br, stream, ref variableDefs, ref functionDefs, scope, existingTokens);
+            return (queryMatch || qMatch) && br.ReadChar() == '.';
         }
     }
 
@@ -179,12 +175,8 @@ namespace AscentLanguage.Tokenizer
 
         public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
         {
-            if (letTokenizer.IsMatch(peekChar, br, stream, ref variableDefs, ref functionDefs, scope, existingTokens))
-            {
-                //TODO: Should this be more robust?
-                return true;
-            }
-            return false;
+            //TODO: Should this be more robust?
+            return letTokenizer.IsMatch(peekChar, br, stream, ref variableDefs, ref functionDefs, scope, existingTokens);
         }
     }
 
@@ -192,7 +184,7 @@ namespace AscentLanguage.Tokenizer
     {
         public override Token GetToken(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope)
         {
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             while (br.PeekChar() != '=')
             {
                 stringBuilder.Append(br.ReadChar());
@@ -223,8 +215,8 @@ namespace AscentLanguage.Tokenizer
         public override Token GetToken(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope)
         {
             var args = functionDefs?.FirstOrDefault(x => x.name == scope)?.args ?? new List<string>();
-            StringBuilder stringBuilder = new StringBuilder();
-            int check = 0;
+            var stringBuilder = new StringBuilder();
+            var check = 0;
             while (!variableDefs.Contains(stringBuilder.ToString()) && !args.Contains(stringBuilder.ToString()) && check < 25)
             {
                 stringBuilder.Append(br.ReadChar());
@@ -239,15 +231,15 @@ namespace AscentLanguage.Tokenizer
             var args = functionDefs?.FirstOrDefault(x => x.name == scope)?.args ?? new List<string>();
             if (!Utility.SearchForPotential((char)peekChar, variableDefs) && !Utility.SearchForPotential((char)peekChar, args)) return false;
 
-            StringBuilder stringBuilder = new StringBuilder();
-            int check = 0;
+            var stringBuilder = new StringBuilder();
+            var check = 0;
             while (!variableDefs.Contains(stringBuilder.ToString()) && !args.Contains(stringBuilder.ToString()) && check < 25)
             {
                 stringBuilder.Append(br.ReadChar());
                 if (stream.Position >= stream.Length) break;
                 check++;
             }
-            string match = stringBuilder.ToString();
+            var match = stringBuilder.ToString();
             return variableDefs.Any(x => x == match) || args.Contains(match);
         }
     }
@@ -256,7 +248,7 @@ namespace AscentLanguage.Tokenizer
     {
         public override Token GetToken(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope)
         {
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             while (!variableDefs.Contains(stringBuilder.ToString()) && br.PeekChar() != '(')
             {
                 stringBuilder.Append(br.ReadChar());
@@ -269,13 +261,13 @@ namespace AscentLanguage.Tokenizer
         public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
         {
             //if (!AscentFunctions.SearchAnyFunctions((char)peekChar) && !Utility.SearchForPotential((char)peekChar, functionDefs.Select(x => x.name))) return false;
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             while (AscentFunctions.GetFunction(stringBuilder.ToString()) == null && br.PeekChar() != '(')
             {
                 stringBuilder.Append(br.ReadChar());
                 if (stream.Position >= stream.Length) break;
             }
-            string match = stringBuilder.ToString();
+            var match = stringBuilder.ToString();
             return AscentFunctions.GetFunction(match) != null || functionDefs.Any(x => x.name == match);
         }
     }
@@ -286,7 +278,7 @@ namespace AscentLanguage.Tokenizer
         public override Token GetToken(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope)
         {
             functionTokenizer.GetToken(peekChar, br, stream, ref variableDefs, ref functionDefs, scope);
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             while (br.PeekChar() != '(' && br.PeekChar() != '{')
             {
                 stringBuilder.Append(br.ReadChar());

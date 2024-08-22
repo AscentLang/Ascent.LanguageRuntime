@@ -1,12 +1,16 @@
 using System.Text;
 
-public static class UnitySystemConsole
+public static class AscentLog
 {
-	private static StringBuilder buffer = new StringBuilder();
+	private static readonly StringBuilder buffer = new StringBuilder();
 
-	public static void Flush()
+	private static void Flush()
 	{
-		//Debug.Log(buffer.ToString());
+		#if UNITY_5_3_OR_NEWER 
+		UnityEngine.Debug.Log(buffer.ToString());
+		#else
+		Console.WriteLine(buffer.ToString());
+		#endif
 		buffer.Length = 0;
 	}
 
