@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AscentLanguage.Tokenizer
 {
@@ -60,28 +59,23 @@ namespace AscentLanguage.Tokenizer
 			var functionDefinitions = new List<FunctionDefinition>();
 			var tokens = new List<Token>();
 			var scope = new Stack<string>();
-			scope.Push("GLOBAL");
+			
+			scope.Push("GLOBAL"); //Our base scope outside of functions and for loops.
 
-			var trimmedExpression = "";
-
+			var trimmedExpression = new StringBuilder();
 			var charArray = expression.ToCharArray();
 			var quoteIdx = 0;
 			foreach (var chr in charArray)
 			{
 				if (chr == '"')
-				{
 					quoteIdx++;
-					trimmedExpression += "";
-				}
 
 				if (!char.IsWhiteSpace(chr) || quoteIdx % 2 == 1)
-				{
-					trimmedExpression += chr;
-				}
+					trimmedExpression.Append(chr);
 			}
 
 			var strLength = trimmedExpression.Length;
-			var stream = new MemoryStream(Encoding.UTF8.GetBytes(trimmedExpression));
+			var stream = new MemoryStream(Encoding.UTF8.GetBytes(trimmedExpression.ToString()));
 			var br = new BinaryReader(stream, Encoding.UTF8);
 			while (stream.Position < strLength)
 			{
@@ -93,24 +87,22 @@ namespace AscentLanguage.Tokenizer
 					if (tokenizer.IsMatch(peek, br, stream, ref variableDefinitions, ref functionDefinitions, scope.Peek(), tokens))
 					{
 						stream.Position = position;
-						tokens.Add(tokenizer.GetToken(peek, br, stream, ref variableDefinitions, ref functionDefinitions, scope.Peek()));
+						var token = tokenizer.GetToken(peek, br, stream, ref variableDefinitions, ref functionDefinitions, scope.Peek());
+						tokens.Add(token);
 						switch (tokenizer)
 						{
 							case FunctionDefinitionTokenizer:
 							{
-								var token = tokens.Last();
 								scope.Push(token.tokenBuffer);
 								break;
 							}
 							case ForLoopTokenizer:
 							{
-								var token = tokens.Last();
 								scope.Push(scope.Peek() + "_" + token.tokenBuffer);
 								break;
 							}
 							case WhileLoopTokenizer:
 							{
-								var token = tokens.Last();
 								scope.Push(scope.Peek() + "_" + token.tokenBuffer);
 								break;
 							}
