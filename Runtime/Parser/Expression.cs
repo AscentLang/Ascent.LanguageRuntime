@@ -11,7 +11,8 @@ using System.Text;
 using System.Threading.Tasks;
 using AscentLanguage.Data;
 using AscentLanguage.Var;
-#if UNITY
+using UnityEngine;
+#if UNITY_5_3_OR_NEWER
 using UnityEngine;
 #endif
 
@@ -171,17 +172,13 @@ namespace AscentLanguage.Parser
                     resultString.SetValue(Token.TokenBuffer, VarType.String);
                     return resultString;
                 case TokenType.Query:
-                    if (ascentVariableMap != null && ascentVariableMap.QueryVariables.TryGetValue(Token.TokenBuffer, out Variable value))
+                    if (ascentVariableMap.QueryVariables.TryGetValue(Token.TokenBuffer, out Variable value))
                     {
                         return value;
                     }
-                    else
-                    {
-                        Console.WriteLine($"Variable {Token.TokenBuffer} ({Token.TokenBuffer.Length}) not found in variable map");
-                        return 0f;
-                    }
-                default:
-                    break;
+
+                    Console.WriteLine($"Variable {Token.TokenBuffer} ({Token.TokenBuffer.Length}) not found in variable map");
+                    return 0f;
             }
 
             return 0.0f;
@@ -419,6 +416,16 @@ namespace AscentLanguage.Parser
             {
                 return value;
             }
+            if (ascentVariableMap.ImportVariables.TryGetValue(VariableToken.TokenBuffer, out ImportVar importValue))
+            {
+                var variable = new Variable();
+                variable.SetValue(importValue.value);
+                return variable;
+            }
+            if (ascentVariableMap.ImportVariablesUnity.TryGetValue(VariableToken.TokenBuffer, out ImportVarUnity unityImportValue))
+            {
+                return new Variable(VarType.Object, unityImportValue.value);
+            }
             return null;
         }
     }
@@ -616,17 +623,20 @@ namespace AscentLanguage.Parser
         {
             if (ascentVariableMap.ImportVariables.TryGetValue(name, out var importVar))
             {
+                //Debug.Log("A " + name + " " + importVar.Name + " is imported.");
                 VarType inputType = (VarType)importVar.type;
                 ascentScriptData.Variables[name] = new Variable(inputType, importVar.Get());
             }
-#if UNITY
+#if UNITY_5_3_OR_NEWER
             else if (ascentVariableMap.ImportVariablesUnity.TryGetValue(name, out var importVarUnity))
             {
+                Debug.Log("B " + name);
                 ascentScriptData.Variables[name] = new Variable(VarType.Object, importVarUnity.value);
             }
 #endif
             else
             {
+                Debug.Log("C " + name);
                 ascentScriptData.Variables[name] = new Variable(VarType.Object, null);
             }
             return null;
@@ -691,7 +701,11 @@ namespace AscentLanguage.Parser
 
         public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
+            Debug.Log(Left.GetType().Name);
+            Debug.Log(Left.Left.GetType().Name);
+            Debug.Log(Left.Left.Evaluate(ascentVariableMap, ascentScriptData).Value.GetType().Name);
             var leftObject = Left.Left.Evaluate(ascentVariableMap, ascentScriptData).Value;
+            
             var leftAccess = Left.Right;
 
             var rightResult = Right.Evaluate(ascentVariableMap, ascentScriptData).Value;

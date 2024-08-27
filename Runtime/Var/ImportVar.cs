@@ -14,7 +14,7 @@ namespace AscentLanguage.Var
 
         public void Set(object settingValue)
         {
-            value = settingValue.ToString();
+            value = settingValue?.ToString();
         }
 
         public object Get()
@@ -51,9 +51,11 @@ namespace AscentLanguage.Var
             Float,
             String,
             Bool,
+#if UNITY_5_3_OR_NEWER
             Vector2,
             Vector3,
             Color,
+#endif
         }
     }
 }

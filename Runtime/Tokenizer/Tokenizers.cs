@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using KTrie;
 
 namespace AscentLanguage.Tokenizer
 {
@@ -260,7 +261,6 @@ namespace AscentLanguage.Tokenizer
 
         public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
         {
-            //if (!AscentFunctions.SearchAnyFunctions((char)peekChar) && !Utility.SearchForPotential((char)peekChar, functionDefs.Select(x => x.name))) return false;
             var stringBuilder = new StringBuilder();
             while (AscentFunctions.GetFunction(stringBuilder.ToString()) == null && br.PeekChar() != '(')
             {
@@ -291,34 +291,6 @@ namespace AscentLanguage.Tokenizer
         public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
         {
             return functionTokenizer.IsMatch(peekChar, br, stream, ref variableDefs, ref functionDefs, scope, existingTokens);
-        }
-    }
-
-    public class ForLoopTokenizer : Tokenizer
-    {
-        private static readonly Tokenizer forTokenizer = new WordMatchTokenizer("for", TokenType.ForLoop);
-        public override Token GetToken(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope)
-        {
-            return forTokenizer.GetToken(peekChar, br, stream, ref variableDefs, ref functionDefs, scope);
-        }
-
-        public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
-        {
-            return forTokenizer.IsMatch(peekChar, br, stream, ref variableDefs, ref functionDefs, scope, existingTokens);
-        }
-    }
-
-    public class WhileLoopTokenizer : Tokenizer
-    {
-        private static readonly Tokenizer whileTokenizer = new WordMatchTokenizer("while", TokenType.WhileLoop);
-        public override Token GetToken(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope)
-        {
-            return whileTokenizer.GetToken(peekChar, br, stream, ref variableDefs, ref functionDefs, scope);
-        }
-
-        public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
-        {
-            return whileTokenizer.IsMatch(peekChar, br, stream, ref variableDefs, ref functionDefs, scope, existingTokens);
         }
     }
 
@@ -492,6 +464,52 @@ namespace AscentLanguage.Tokenizer
                 //TODO: Should this be more robust?
                 return true;
             }
+            return false;
+        }
+    }
+
+    // Optimized tokenizer to use a Trie for fast tokenization.
+    // TODO: Should implement this into variable and function matching.
+    public class KeywordTokenizer : Tokenizer
+    {
+        private readonly Dictionary<string, TokenType> _keywords;
+        private readonly Trie trie = new();
+        public KeywordTokenizer(Dictionary<string, TokenType> keywords)
+        {
+            _keywords = keywords;
+            
+            //not ideal
+            keywords.Keys.ToList().ForEach(k => trie.Add(k));
+        }
+        
+        private static bool ContinueFeedingTerm(int chara)
+        {
+            return (chara >= 'a' && chara <= 'z') || (chara >= 'A' && chara <= 'Z');
+        }
+
+        public override Token GetToken(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope)
+        {
+            var stringBuilder = new StringBuilder();
+            while (trie.StartsWith(peekChar.ToString()).Count() > 1)
+            {
+                stringBuilder.Append(br.ReadChar());
+                if (stream.Position >= stream.Length) break;
+            }
+            var keyword = stringBuilder.ToString();
+            return new Token(_keywords[keyword], keyword);
+        }
+
+        public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
+        {
+            var peekMatches = trie.StartsWith("" + (char)peekChar).Any();
+            if (!peekMatches) return false;
+            var stringBuilder = new StringBuilder();
+            while (trie.StartsWith(peekChar.ToString()).Count() > 1)
+            {
+                stringBuilder.Append(br.ReadChar());
+                if (stream.Position >= stream.Length) break;
+            }
+            AscentLog.WriteLine("Keyword: " + stringBuilder.ToString());
             return false;
         }
     }

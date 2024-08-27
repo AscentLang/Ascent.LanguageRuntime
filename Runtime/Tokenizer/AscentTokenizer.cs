@@ -10,7 +10,19 @@ namespace AscentLanguage.Tokenizer
 	{
 		private static readonly List<Tokenizer> tokenizers = new List<Tokenizer>
 		{
-			new QueryTokenizer(),
+			new KeywordTokenizer(new Dictionary<string, TokenType>()
+			{
+				{ "true", TokenType.True },
+				{ "false", TokenType.False },
+				{ "return", TokenType.Return },
+				{ "for", TokenType.ForLoop },
+				{ "while", TokenType.ForLoop },
+			}),
+			new SingleCharTokenizer(';', TokenType.SemiColon, false),
+			new SingleCharTokenizer('{', TokenType.LeftScope, false),
+			new SingleCharTokenizer('}', TokenType.RightScope, false),
+			new SingleCharTokenizer('(', TokenType.LeftParenthesis, true),
+			new SingleCharTokenizer(')', TokenType.RightParenthesis, false),
 			new WordMatchTokenizer("++", TokenType.Increment),
 			new WordMatchTokenizer("--", TokenType.Decrement),
 			new WordMatchTokenizer("+=", TokenType.AdditionAssignment),
@@ -21,24 +33,15 @@ namespace AscentLanguage.Tokenizer
 			new SingleCharTokenizer('/', TokenType.Division, true),
 			new SingleCharTokenizer('^', TokenType.Pow, true),
 			new SingleCharTokenizer('%', TokenType.Pow, true),
-			new SingleCharTokenizer('(', TokenType.LeftParenthesis, true),
-			new SingleCharTokenizer(')', TokenType.RightParenthesis, false),
 			new SingleCharTokenizer('[', TokenType.LeftBracket, true),
 			new SingleCharTokenizer(']', TokenType.RightBracket, false),
 			new SingleCharTokenizer('<', TokenType.LesserThen, true),
 			new SingleCharTokenizer('>', TokenType.GreaterThan, true),
 			new SingleCharTokenizer('?', TokenType.TernaryConditional, true),
 			new SingleCharTokenizer(':', TokenType.Colon, true),
-			new SingleCharTokenizer(';', TokenType.SemiColon, false),
 			new SingleCharTokenizer(',', TokenType.Comma, false),
-			new SingleCharTokenizer('{', TokenType.LeftScope, false),
-			new SingleCharTokenizer('}', TokenType.RightScope, false),
-			new WordMatchTokenizer("true", TokenType.True),
-			new WordMatchTokenizer("false", TokenType.False),
-			new WordMatchTokenizer("return", TokenType.Return),
+			new QueryTokenizer(),
 			new AccessTokenizer(),
-			new ForLoopTokenizer(),
-			new WhileLoopTokenizer(),
 			new FunctionDefinitionTokenizer(),
 			new FunctionArgumentTokenizer(),
 			new FunctionTokenizer(),
@@ -94,16 +97,6 @@ namespace AscentLanguage.Tokenizer
 							case FunctionDefinitionTokenizer:
 							{
 								scope.Push(token.TokenBuffer);
-								break;
-							}
-							case ForLoopTokenizer:
-							{
-								scope.Push(scope.Peek() + "_" + token.TokenBuffer);
-								break;
-							}
-							case WhileLoopTokenizer:
-							{
-								scope.Push(scope.Peek() + "_" + token.TokenBuffer);
 								break;
 							}
 							case SingleCharTokenizer { Token: '}' }:
