@@ -3,12 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AscentLanguage.Var;
+using KTrie;
 
 namespace AscentLanguage.Functions
 {
 	public static class AscentFunctions
 	{
-		private static readonly Dictionary<string, Function> functions = new ()
+		public static readonly TrieDictionary<Function> Functions = new (null)
 		{
 			{ "sin", new SinFunction() },
 			{ "cos", new CosFunction() },
@@ -26,11 +27,7 @@ namespace AscentLanguage.Functions
 			{ "bez_curve_y", new BezierCurveYFunction() },
 			{ "debug", new DebugFunction() },
 		};
-
-		public static Function? GetFunction(string name)
-		{
-			return functions.TryGetValue(name, out var function) ? function : null;
-		}
+		
 		public abstract class Function
 		{
 			public abstract Variable Evaluate(Variable[] input);

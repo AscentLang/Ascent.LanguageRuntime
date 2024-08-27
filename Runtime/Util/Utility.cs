@@ -3,15 +3,22 @@ using AscentLanguage.Splitter;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using KTrie;
+using UnityEditor.Build;
 
 namespace AscentLanguage.Util
 {
     public static class Utility
     {
-        //TODO: Replace all usages with Trie objects
-        public static bool SearchForPotential(char c, IEnumerable<string> strings)
+        // Ensures that a key leads to a plausible route but does not actually contain the key yet.
+        // Used in the tokenizer to prevent over-reading past the trie key.
+        public static bool PartialContains(this Trie trie, string key)
         {
-            return strings.Any(x => x.StartsWith(c.ToString()));
+            return trie.StartsWith(key).Any() && !trie.Contains(key);
+        }
+        public static bool PartialContains<T>(this TrieDictionary<T> trie, string key)
+        {
+            return trie.StartsWith(key).Any() && !trie.ContainsKey(key);
         }
         
         //TODO: Can we optimize this?

@@ -1,16 +1,11 @@
 ﻿using System.Collections.Generic;
+using KTrie;
 
 namespace AscentLanguage.Parser
 {
     public class FunctionDefinition
     {
-        public FunctionDefinition(string name)
-        {
-            Name = name;
-        }
-
-        public string Name { get; }
-        public List<string> Args { get; set; } = new();
+        public Trie Args { get; set; } = new();
         public Expression[] Contents { get; set; }
     }
 }

@@ -70,6 +70,13 @@ namespace KTrie
             return nodes.Select(t => new KeyValuePair<string, TValue>(t.Word, ((TerminalValueCharTrieNode)t).Value));
         }
 
+        public IEnumerable<KeyValuePair<string, TValue>> StartsWith(char value)
+        {
+            var nodes = _trie.GetTerminalNodesByPrefix(value);
+            
+            return nodes.Select(t => new KeyValuePair<string, TValue>(t.Word, ((TerminalValueCharTrieNode)t).Value));
+        }
+
         public IEnumerable<KeyValuePair<string, TValue>> Matches(IReadOnlyList<Character> pattern)
         {
             return _trie.GetNodesByPattern(pattern)

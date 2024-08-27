@@ -20,20 +20,26 @@ namespace AscentLanguage.Var
 
         public T GetValue<T>()
         {
-            if (Value is T value)
+            object result = typeof(T) switch
             {
-                return value;
-            }
-            throw new InvalidCastException($"Cannot cast {Value.GetType().Name} to {typeof(T).Name}");
+                Type t when t == typeof(float) => ToFloat(),
+                Type t when t == typeof(string) => ToStringValue(),
+                Type t when t == typeof(bool) => ToBool(),
+                Type t when t.IsInstanceOfType(Value) => Value,
+                _ => throw new InvalidCastException($"Cannot cast {Type} to {typeof(T).Name}")
+            };
+
+            return (T)result;
         }
 
         public object GetValue(Type type)
         {
-            if (type.IsInstanceOfType(Value))
-            {
-                return Value;
-            }
-            throw new InvalidCastException($"Cannot cast {Value.GetType().Name} to {type.Name}");
+            if (type == typeof(float)) return ToFloat();
+            if (type == typeof(string)) return ToStringValue();
+            if (type == typeof(bool)) return ToBool();
+            if (type.IsInstanceOfType(Value)) return Value;
+            
+            throw new InvalidCastException($"Cannot cast {Type} to {type.Name}");
         }
 
         public void SetValue<T>(T value)
@@ -59,6 +65,34 @@ namespace AscentLanguage.Var
             if (type == typeof(UnityEngine.Color)) return VarType.Color;
 #endif
             return VarType.Object;
+        }
+        
+        // Explicit conversion methods
+        public float ToFloat()
+        {
+            return Type switch
+            {
+                VarType.Float => Convert.ToSingle(Value),
+                VarType.Bool => (bool)Value ? 1f : 0f,
+                VarType.String => float.TryParse((string)Value, out float result) ? result : throw new InvalidCastException($"Cannot convert {Value} to float"),
+                _ => throw new InvalidCastException($"Cannot convert {Type} to float")
+            };
+        }
+
+        public string ToStringValue()
+        {
+            return Value?.ToString() ?? "null";
+        }
+
+        public bool ToBool()
+        {
+            return Type switch
+            {
+                VarType.Bool => (bool)Value,
+                VarType.Float => Convert.ToSingle(Value) != 0f,
+                VarType.String => bool.TryParse((string)Value, out bool result) ? result : throw new InvalidCastException($"Cannot convert {Value} to bool"),
+                _ => throw new InvalidCastException($"Cannot convert {Type} to bool")
+            };
         }
 
         // Implicit conversion operators

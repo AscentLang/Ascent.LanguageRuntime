@@ -230,13 +230,14 @@ namespace AscentLanguage.Parser
         public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             Defintion.Evaluate(ascentVariableMap, ascentScriptData);
-            while (Condition.Evaluate(ascentVariableMap, ascentScriptData).GetValue<float>() > 0.5f)
+            while (Condition.Evaluate(ascentVariableMap, ascentScriptData)?.GetValue<bool>() ?? false)
             {
                 foreach (var expression in Contents)
                 {
                     var map = ascentScriptData?.Clone();
+                    if (map == null) continue;
                     expression.Evaluate(ascentVariableMap, map);
-                    foreach (var item in ascentScriptData.Variables.Select(x => x.Key))
+                    foreach (var item in ascentScriptData.Variables.Select(x => x.Key).ToList())
                     {
                         ascentScriptData.Variables[item] = map.Variables[item];
                     }
@@ -268,7 +269,7 @@ namespace AscentLanguage.Parser
                 {
                     var map = ascentScriptData?.Clone();
                     expression.Evaluate(ascentVariableMap, map);
-                    foreach (var item in ascentScriptData.Variables.Select(x => x.Key))
+                    foreach (var item in ascentScriptData.Variables.Select(x => x.Key).ToList())
                     {
                         ascentScriptData.Variables[item] = map.Variables[item];
                     }
@@ -329,7 +330,7 @@ namespace AscentLanguage.Parser
         public override Variable? Evaluate(AscentVariableMap ascentVariableMap, AscentScriptData ascentScriptData)
         {
             var name = FunctionToken.TokenBuffer;
-            var function = AscentFunctions.GetFunction(name);
+            var function = AscentFunctions.Functions.GetValueOrDefault(name);
             Variable?[] args = Arguments.Select(x => x.Evaluate(ascentVariableMap, ascentScriptData)).ToArray();
             if (function != null) return function.Evaluate(args);
             if (ascentScriptData.Functions.TryGetValue(name, out var expressions))
@@ -338,7 +339,7 @@ namespace AscentLanguage.Parser
                 {
                     if (args.Length > i)
                     {
-                        ascentScriptData.Variables[expressions.Args[i]] = args[i];
+                        ascentScriptData.Variables[expressions.Args.ToList()[i]] = args[i];
                     }
                 }
                 Variable? result = default;
@@ -355,7 +356,7 @@ namespace AscentLanguage.Parser
                 {
                     if (args.Length > i)
                     {
-                        ascentScriptData.Variables.Remove(expressions.Args[i]);
+                        ascentScriptData.Variables.Remove(expressions.Args.ToList()[i]);
                     }
                 }
                 return result;

@@ -67,6 +67,13 @@ namespace KTrie
             IEnumerable<string> _() => GetTerminalNodesByPrefix(value).Select(n => n.Word);
         }
 
+        public IEnumerable<string> StartsWith(char value)
+        {
+            return _();
+
+            IEnumerable<string> _() => GetTerminalNodesByPrefix(value).Select(n => n.Word);
+        }
+
         public IEnumerable<string> Matches(IReadOnlyList<Character> pattern)
         {
             return _();
@@ -140,6 +147,12 @@ namespace KTrie
         }
 
         internal IEnumerable<TerminalCharTrieNode> GetTerminalNodesByPrefix(ReadOnlySpan<char> prefix)
+        {
+            var node = GetNode(prefix);
+            return GetTerminalNodes(node);
+        }
+
+        internal IEnumerable<TerminalCharTrieNode> GetTerminalNodesByPrefix(char prefix)
         {
             var node = GetNode(prefix);
             return GetTerminalNodes(node);
@@ -223,6 +236,11 @@ namespace KTrie
             }
 
             return current;
+        }
+
+        internal CharTrieNode? GetNode(char prefix)
+        {
+            return GetChildNode(_root, prefix);
         }
 
         internal IEnumerable<CharTrieNode> GetNodesByPattern(IReadOnlyList<Character> pattern)

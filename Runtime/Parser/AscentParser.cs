@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AscentLanguage.Data;
+using KTrie;
 
 namespace AscentLanguage.Parser
 {
@@ -78,17 +79,19 @@ namespace AscentLanguage.Parser
             return expressions;
         }
 
-        private Expression ParseExpression(AscentVariableMap variableMap, AscentScriptData scriptData)
+        private Expression ParseExpression(AscentVariableMap variableMap, AscentScriptData scriptData, bool debug = false)
         {
-            return ParseBinary(0, variableMap, scriptData);
+            return ParseBinary(0, variableMap, scriptData, debug);
         }
 
-        private Expression ParseBinary(int opPrecedence, AscentVariableMap variableMap, AscentScriptData scriptData)
+        private Expression ParseBinary(int opPrecedence, AscentVariableMap variableMap, AscentScriptData scriptData, bool debug)
         {
             var left = ParsePrimary(variableMap, scriptData);
 
             while (true)
             {
+                if (_position < _currentTokens.Length && debug)
+                    AscentLog.WriteLine(_currentTokens[_position].Type.ToString());
                 if (_position >= _currentTokens.Length || !precedence.ContainsKey(_currentTokens[_position].Type))
                 {
                     break;
@@ -117,7 +120,7 @@ namespace AscentLanguage.Parser
                     return new TernaryExpression(left, trueExpression, falseExpression);
                 }
 
-                var right = ParseBinary(tokenPrecedence + 1, variableMap, scriptData);
+                var right = ParseBinary(tokenPrecedence + 1, variableMap, scriptData, debug);
                 left = new BinaryExpression(left, operatorToken, right);
             }
 
@@ -138,7 +141,20 @@ namespace AscentLanguage.Parser
             else if (CurrentTokenIs(TokenType.Variable))
             {
                 var variableToken = _currentTokens[_position++];
-                left = new VariableExpression(variableToken);
+                if (CurrentTokenIs(TokenType.Increment))
+                {
+                    left = new IncrementVariableExpression(variableToken);
+                    _position++; // consume '++'
+                }
+                else if (CurrentTokenIs(TokenType.Decrement))
+                {
+                    left = new DecrementVariableExpression(variableToken);
+                    _position++; // consume '--'
+                }
+                else
+                {
+                    left = new VariableExpression(variableToken);
+                }
             }
             else if (CurrentTokenIs(TokenType.LeftParenthesis))
             {
@@ -189,9 +205,10 @@ namespace AscentLanguage.Parser
                     _position++; // consume '('
                     var arguments = ParseDefinitionArguments();
                     var name = functionToken.TokenBuffer;
-                    var definition = new FunctionDefinition(name);
+                    var definition = new FunctionDefinition();
                     scriptData.Functions.Add(name, definition);
-                    definition.Args = arguments.ToList();
+                    definition.Args = new Trie();
+                    arguments.ToList().ForEach(x=> definition.Args.Add(x));
                     _position++; // consume ')'
                 }
 
@@ -241,7 +258,7 @@ namespace AscentLanguage.Parser
 
                 if (!CurrentTokenIs(TokenType.LeftScope))
                 {
-                    throw new FormatException("Expected '{' after for loop");
+                    throw new FormatException($"Expected '{"{"}' after for loop current token: {_currentTokens[_position].Type.ToString()}");
                 }
                 _position++; // consume '{'
 
@@ -290,7 +307,8 @@ namespace AscentLanguage.Parser
             else if (CurrentTokenIs(TokenType.Definition) || CurrentTokenIs(TokenType.Assignment))
             {
                 var definitionToken = _currentTokens[_position++];
-                var assignment = ParseExpression(variableMap, scriptData);
+                _position++; // consume '='                     
+                var assignment = ParseExpression(variableMap, scriptData, true);
                 left = new AssignmentExpression(definitionToken, assignment);
             }
             else if (CurrentTokenIs(TokenType.Return))

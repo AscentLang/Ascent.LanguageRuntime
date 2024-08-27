@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using KTrie;
 
 namespace AscentLanguage.Tokenizer
 {
@@ -16,7 +17,7 @@ namespace AscentLanguage.Tokenizer
 				{ "false", TokenType.False },
 				{ "return", TokenType.Return },
 				{ "for", TokenType.ForLoop },
-				{ "while", TokenType.ForLoop },
+				{ "while", TokenType.WhileLoop },
 			}),
 			new SingleCharTokenizer('{', TokenType.LeftScope, false),
 			new SingleCharTokenizer('}', TokenType.RightScope, false),
@@ -57,8 +58,8 @@ namespace AscentLanguage.Tokenizer
 
 		public static Token[] Tokenize(string expression)
 		{
-			var variableDefinitions = new List<string>();
-			var functionDefinitions = new List<FunctionDefinition>();
+			var variableDefinitions = new Trie();
+			var functionDefinitions = new TrieDictionary<FunctionDefinition>(null);
 			var tokens = new List<Token>();
 			var scope = new Stack<string>();
 			
@@ -91,25 +92,22 @@ namespace AscentLanguage.Tokenizer
 						stream.Position = position;
 						var token = tokenizer.GetToken(peek, br, stream, ref variableDefinitions, ref functionDefinitions, scope.Peek());
 						tokens.Add(token);
-						switch (tokenizer)
-						{
-							case FunctionDefinitionTokenizer:
-							{
-								scope.Push(token.TokenBuffer);
-								break;
-							}
-							case SingleCharTokenizer { Token: '}' }:
-								scope.Pop();
-								break;
-						}
+						
+						if (token.Type == TokenType.FunctionDefinition)
+							scope.Push(token.TokenBuffer);
+						else if (token.Type == TokenType.RightBracket) 
+							scope.Pop();
 
 						succeeded = true;
 						break;
 					}
 					stream.Position = position;
 				}
+
 				if (!succeeded)
-					br.ReadChar(); // Prevent stack overflow
+				{
+					AscentLog.WriteLine("bleh " + br.ReadChar()); // Prevent stack overflow
+				}
 			}
 
 			return tokens.ToArray();
