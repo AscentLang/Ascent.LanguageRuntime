@@ -52,13 +52,11 @@ namespace AscentLanguage.Tokenizer
 
         public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
         {
-            if (existingTokens != null && existingTokens.Count > 0)
+            if (existingTokens is not { Count: > 0 }) return false;
+            var lastToken = existingTokens[^1];
+            if (lastToken.Type is TokenType.Constant or TokenType.Variable or TokenType.Query)
             {
-                Token lastToken = existingTokens[existingTokens.Count - 1];
-                if (lastToken.Type == TokenType.Constant || lastToken.Type == TokenType.Variable || lastToken.Type == TokenType.Query)
-                {
-                    return peekChar == '-';
-                }
+                return peekChar == '-';
             }
             return false;
         }
@@ -72,7 +70,7 @@ namespace AscentLanguage.Tokenizer
         }
         public override Token GetToken(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope)
         {
-            StringBuilder stringBuilder = new StringBuilder();
+            var stringBuilder = new StringBuilder();
             while (IsNumber(br.PeekChar()))
             {
                 stringBuilder.Append(br.ReadChar());
@@ -83,7 +81,7 @@ namespace AscentLanguage.Tokenizer
 
         public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
         {
-            return IsNumber(peekChar);
+            return IsNumber(peekChar) && peekChar != '.';
         }
     }
 
@@ -438,9 +436,7 @@ namespace AscentLanguage.Tokenizer
 
     public class AccessTokenizer : Tokenizer
     {
-        private static readonly Tokenizer periodTokenizer = new SingleCharTokenizer('.', TokenType.Access, false);
-
-        public static bool ContinueFeedingTerm(int chara)
+        private static bool ContinueFeedingTerm(int chara)
         {
             return (chara >= 'a' && chara <= 'z') || (chara >= 'A' && chara <= 'Z');
         }
@@ -459,12 +455,8 @@ namespace AscentLanguage.Tokenizer
 
         public override bool IsMatch(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope, List<Token>? existingTokens = null)
         {
-            if (periodTokenizer.IsMatch(peekChar, br, stream, ref variableDefs, ref functionDefs, scope, existingTokens))
-            {
-                //TODO: Should this be more robust?
-                return true;
-            }
-            return false;
+            //TODO: Should this be more robust?
+            return peekChar == '.';
         }
     }
 
@@ -480,11 +472,6 @@ namespace AscentLanguage.Tokenizer
             
             //not ideal
             keywords.Keys.ToList().ForEach(k => trie.Add(k));
-        }
-        
-        private static bool ContinueFeedingTerm(int chara)
-        {
-            return (chara >= 'a' && chara <= 'z') || (chara >= 'A' && chara <= 'Z');
         }
 
         public override Token GetToken(int peekChar, BinaryReader br, MemoryStream stream, ref List<string> variableDefs, ref List<FunctionDefinition> functionDefs, string scope)

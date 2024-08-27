@@ -1,16 +1,16 @@
 ﻿using AscentLanguage.Parser;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace AscentLanguage.Tokenizer
 {
 	public static class AscentTokenizer
 	{
-		private static readonly List<Tokenizer> tokenizers = new List<Tokenizer>
+		private static readonly List<Tokenizer> tokenizers = new ()
 		{
-			new KeywordTokenizer(new Dictionary<string, TokenType>()
+			new SingleCharTokenizer(';', TokenType.SemiColon, false),
+			new KeywordTokenizer(new Dictionary<string, TokenType>
 			{
 				{ "true", TokenType.True },
 				{ "false", TokenType.False },
@@ -18,7 +18,6 @@ namespace AscentLanguage.Tokenizer
 				{ "for", TokenType.ForLoop },
 				{ "while", TokenType.ForLoop },
 			}),
-			new SingleCharTokenizer(';', TokenType.SemiColon, false),
 			new SingleCharTokenizer('{', TokenType.LeftScope, false),
 			new SingleCharTokenizer('}', TokenType.RightScope, false),
 			new SingleCharTokenizer('(', TokenType.LeftParenthesis, true),
@@ -40,19 +39,19 @@ namespace AscentLanguage.Tokenizer
 			new SingleCharTokenizer('?', TokenType.TernaryConditional, true),
 			new SingleCharTokenizer(':', TokenType.Colon, true),
 			new SingleCharTokenizer(',', TokenType.Comma, false),
-			new QueryTokenizer(),
-			new AccessTokenizer(),
-			new FunctionDefinitionTokenizer(),
-			new FunctionArgumentTokenizer(),
-			new FunctionTokenizer(),
-			new DefinitionTokenizer(),
-			new AssignmentTokenizer(),
-			new VariableTokenizer(),
 			new NumberTokenizer(),
 			new StringTokenizer(),
 			new NamespaceTokenizer(),
 			new UsingTokenizer(),
 			new ImportTokenizer(),
+			new QueryTokenizer(),
+			new AccessTokenizer(),
+			new FunctionDefinitionTokenizer(),
+			new FunctionTokenizer(),
+			new DefinitionTokenizer(),
+			new AssignmentTokenizer(),
+			new VariableTokenizer(),
+			new FunctionArgumentTokenizer(),
 			new SingleCharTokenizer('=', TokenType.Assignment, true) // Only shows for access assignments
 		};
 
